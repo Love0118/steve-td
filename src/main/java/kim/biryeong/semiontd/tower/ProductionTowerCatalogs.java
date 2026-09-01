@@ -10,6 +10,7 @@ import kim.biryeong.semiontd.tower.army.ArmyTowerCatalogs;
 import kim.biryeong.semiontd.tower.atlantis.AtlantisTowerCatalogs;
 import kim.biryeong.semiontd.tower.body.BodyTowerCatalogs;
 import kim.biryeong.semiontd.tower.pet.PetTowerCatalogs;
+import kim.biryeong.semiontd.tower.pirate.PirateTowerCatalogs;
 import kim.biryeong.semiontd.tower.demonlord.DemonLordTowerCatalogs;
 import kim.biryeong.semiontd.tower.developer.DeveloperTowerCatalogs;
 import kim.biryeong.semiontd.tower.end.EndTowerCatalogs;
@@ -71,6 +72,7 @@ public final class ProductionTowerCatalogs {
             BodyTowerCatalogs.register();
             FrostTowerCatalogs.register();
             PetTowerCatalogs.register();
+            PirateTowerCatalogs.register();
         }
     }
 }
