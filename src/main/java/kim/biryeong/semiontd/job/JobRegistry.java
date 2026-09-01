@@ -26,8 +26,7 @@ public final class JobRegistry {
             OceanTowerJob.ID,
             AncientCityTowerJob.ID,
             HeroPartyTowerJob.ID,
-            SuccubusTowerJob.ID,
-            PirateTowerJob.ID
+            SuccubusTowerJob.ID
     );
     private static final SemionJob DEFAULT_JOB = register(new DefaultJob());
     private static JobAvailabilityConfig availability = JobAvailabilityConfig.defaultConfig();
