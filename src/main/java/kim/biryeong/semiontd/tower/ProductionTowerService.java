@@ -134,7 +134,7 @@ public final class ProductionTowerService {
         }
         tower.clearPermanentStatBonuses(laneContext.lane);
         laneContext.player.economy().addMineral(refund);
-        PirateStates.grantFerrymanIncome(laneContext.player);
+        PirateStates.grantFerrymanSaleIncome(laneContext.player, tower.paidMineralCost(), refund);
         PirateTower.notifyTowerSold(laneContext.lane, tower);
         tower.onSold(laneContext.lane);
         game.recordTowerSale(playerId, tower.type().id(), position, refund);

@@ -42,6 +42,28 @@ public final class PirateStates {
                 .filter(tower -> player.uuid().equals(tower.ownerPlayer())).forEach(tower -> tower.refreshEconomyStats(lane)));
     }
     /** Awards one payout per owned ferryman; this method deliberately does not recursively invoke itself. */
-    public static void grantFerrymanIncome(SemionPlayer player) { State state = player == null ? null : STATES.get(player.uuid()); if (state == null) return; state.game.playerLane(player.uuid()).ifPresent(lane -> { long bonus = lane.towers().stream().filter(tower -> player.uuid().equals(tower.ownerPlayer())).mapToLong(tower -> PirateTowers.isFerryman(tower.type()) ? TowerBalanceRuntime.abilityInt(tower.type().id(), "incomeBonus", PirateTowers.matches(tower.type(), PirateTowers.LEGENDARY_FERRYMAN) ? 4 : PirateTowers.matches(tower.type(), PirateTowers.VETERAN_FERRYMAN) ? 3 : 2) : 0).sum(); if (bonus > 0) player.economy().addDiamond(bonus); }); }
+    public static void grantFerrymanIncome(SemionPlayer player) {
+        long bonus = ferrymanIncome(player);
+        if (bonus > 0) player.economy().addDiamond(bonus);
+    }
+
+    /** Keeps the refund intact and halves only positive direct-sale profit, rounding down. */
+    public static void grantFerrymanSaleIncome(SemionPlayer player, long paidMineralCost, long refundAmount) {
+        long bonus = ferrymanIncome(player);
+        long profit = bonus - (paidMineralCost - refundAmount);
+        if (profit > 0) bonus -= profit - profit / 2;
+        if (bonus > 0) player.economy().addDiamond(bonus);
+    }
+
+    private static long ferrymanIncome(SemionPlayer player) {
+        State state = player == null ? null : STATES.get(player.uuid());
+        if (state == null) return 0;
+        return state.game.playerLane(player.uuid()).map(lane -> lane.towers().stream()
+                .filter(tower -> player.uuid().equals(tower.ownerPlayer()) && PirateTowers.isFerryman(tower.type()))
+                .mapToLong(tower -> TowerBalanceRuntime.abilityInt(tower.type().id(), "incomeBonus",
+                        PirateTowers.matches(tower.type(), PirateTowers.LEGENDARY_FERRYMAN) ? 4
+                                : PirateTowers.matches(tower.type(), PirateTowers.VETERAN_FERRYMAN) ? 3 : 2))
+                .sum()).orElse(0L);
+    }
     private static final class State { private final SemionGame game; private final SemionPlayer player; private long diamondSpent; private long emeraldSpent; private long admiralRemainder; private State(SemionGame game, SemionPlayer player) { this.game = game; this.player = player; } }
 }
