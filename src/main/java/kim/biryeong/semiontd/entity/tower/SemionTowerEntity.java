@@ -330,6 +330,9 @@ public final class SemionTowerEntity extends PathfinderMob implements AnimatedEn
     }
 
     public double attackRange() {
+        if (runtimeTower != null && !runtimeTower.canUseBasicAttacks()) {
+            return 0.0;
+        }
         double multiplier = 1.0
                 + timedEffects.magnitude(TimedEffectType.TOWER_RANGE_BONUS)
                 - timedEffects.magnitude(TimedEffectType.TOWER_RANGE_REDUCTION);

@@ -2,11 +2,9 @@ package kim.biryeong.semiontd.tower.gamble;
 
 import java.util.List;
 import kim.biryeong.semiontd.entity.visual.EntityVisual;
-import kim.biryeong.semiontd.entity.visual.VillagerVisual;
 import kim.biryeong.semiontd.tower.TowerCategory;
 import kim.biryeong.semiontd.tower.TowerType;
 import kim.biryeong.semiontd.tower.description.TowerDescriptionRegistry;
-import net.minecraft.world.entity.npc.VillagerProfession;
 
 public final class GambleTowers {
     private static final EntityVisual GAMBLER_VISUAL = EntityVisual.builder("minecraft:wandering_trader")
@@ -18,12 +16,12 @@ public final class GambleTowers {
             List.of(
                     "각 주사위 타워는 라운드마다 주사위 한 개를 굴려 범위 안의 내 전투 타워에 같은 효과를 줍니다.",
                     "눈 1~2는 약화, 3~4는 단일 강화, 5~6은 복합 강화입니다.",
-                    "강화하면 약화 수치는 유지되고, 긍정 효과와 지원 범위만 증가합니다.",
+                    "강화하면 약화 수치는 유지되고, 체력·긍정 효과·지원 범위가 증가합니다.",
                     "공격하지 않으며 지원 범위와 이번 라운드 눈금이 타워 머리 위에 표시됩니다."
             )
     );
     public static final TowerType DICE_T2 = support(
-            "gamble_dice_t2", "주사위 타워 II", 0, 10, 5,
+            "gamble_dice_t2", "주사위 타워 II", 0, 100, 5,
             GambleDiceVisuals.visual(2, 1),
             List.of(
                     "긍정 효과가 같은 눈의 I단계보다 2배로 증가하며, 약화 수치는 증가하지 않습니다.",
@@ -33,7 +31,7 @@ public final class GambleTowers {
             )
     );
     public static final TowerType DICE_T3 = support(
-            "gamble_dice_t3", "주사위 타워 III", 0, 10, 6.5,
+            "gamble_dice_t3", "주사위 타워 III", 0, 300, 6.5,
             GambleDiceVisuals.visual(3, 1),
             List.of(
                     "긍정 효과가 같은 눈의 I단계보다 3.5배로 증가하며, 약화 수치는 증가하지 않습니다.",
@@ -46,8 +44,9 @@ public final class GambleTowers {
             .mineralCost(60).maxHealth(110).range(6.5).damage(5).attackIntervalTicks(13)
             .visual(GAMBLER_VISUAL)
             .description(List.of(
-                    "준비 시간에 홀수·짝수는 80 다이아, 주사위 두 개는 160 다이아를 내고 반복할 수 있습니다.",
-                    "슬롯머신은 능력치 감소 없이 심볼에 따라 강화됩니다.",
+                    "준비 시간에 홀수·짝수, 주사위 두 개, 슬롯 도박을 반복할 수 있습니다. 비용은 업그레이드 버튼에 표시됩니다.",
+                    "슬롯 도박은 능력치 감소 없이 심볼에 따라 강화됩니다.",
+                    "내 라인에 살아 있는 주사위 타워가 있어야 주사위 두 개, 슬롯머신 타워가 있어야 슬롯 도박을 할 수 있습니다.",
                     "기본 마법 공격력은 {ability.baseMagicDamage:attack_damage}이며 일반 피해와 함께 적용됩니다.",
                     "주사위 눈에 따라 최대 체력·일반 공격력·마법 공격력·사거리 중 무작위 능력치가 오르거나 내려갑니다.",
                     "주사위 두 개의 합이 {ability.gamble_global.twoDiceCompoundMinSum:integer} 이상이면 서로 다른 능력치 두 개가 보상을 나눠 받습니다.",
@@ -81,23 +80,25 @@ public final class GambleTowers {
                     "누적 점수 +{ability.gamble_global.maxGambleScore:integer}에 도달하기 전까지 네 가지 도박을 계속할 수 있습니다."
             )).build();
     public static final TowerType SPECTATOR_T1 = support(
-            "gamble_spectator_t1", "구경꾼 타워 I", 45, 10, 3.5,
-            VillagerVisual.builder().profession(VillagerProfession.NITWIT).build(),
+            "gamble_spectator_t1", "슬롯머신 타워 I", 45, 10, 3.5,
+            EntityVisual.builder("minecraft:slime").blockbenchModel("semion-td:tower/gamble_slot_machine")
+                    .scale(0.75).build(),
             List.of(
                     "누적 도박 점수가 가장 높은 도박꾼 하나를 집중 지원합니다.",
-                    "도박꾼 하나에는 구경꾼이 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기까지 연결됩니다.",
+                    "도박꾼 하나에는 슬롯머신이 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기까지 연결됩니다.",
                     "눈 1~2는 능력치 2개 약화, 3~4는 능력치 2개 강화, 5~6은 네 능력치 모두 강화입니다.",
                     "눈 6이 나오면 다이아 {ability.faceSixDiamondReward:integer}개를 얻습니다.",
-                    "강화하면 약화 수치는 유지되고, 긍정 효과와 연결 범위만 증가합니다.",
+                    "강화하면 약화 수치는 유지되고, 체력·긍정 효과·연결 범위가 증가합니다.",
                     "공격하지 않으며 연결선과 이번 라운드 눈금이 타워 머리 위에 표시됩니다."
             )
     );
     public static final TowerType SPECTATOR_T2 = support(
-            "gamble_spectator_t2", "구경꾼 타워 II", 0, 10, 5,
-            VillagerVisual.builder().profession(VillagerProfession.LIBRARIAN).build(),
+            "gamble_spectator_t2", "슬롯머신 타워 II", 0, 100, 5,
+            EntityVisual.builder("minecraft:slime").blockbenchModel("semion-td:tower/gamble_slot_machine_t2")
+                    .scale(0.90).build(),
             List.of(
                     "누적 도박 점수가 가장 높은 도박꾼 하나를 집중 지원합니다.",
-                    "도박꾼 하나에는 구경꾼이 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기까지 연결됩니다.",
+                    "도박꾼 하나에는 슬롯머신이 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기까지 연결됩니다.",
                     "긍정 효과가 같은 눈의 I단계보다 2배로 증가하며, 약화 수치는 증가하지 않습니다.",
                     "눈 1~2는 능력치 2개 약화, 3~4는 능력치 2개 강화, 5~6은 네 능력치 모두 강화입니다.",
                     "눈 6이 나오면 다이아 {ability.faceSixDiamondReward:integer}개를 얻습니다.",
@@ -105,11 +106,12 @@ public final class GambleTowers {
             )
     );
     public static final TowerType SPECTATOR_T3 = support(
-            "gamble_spectator_t3", "구경꾼 타워 III", 0, 10, 6.5,
-            VillagerVisual.builder().profession(VillagerProfession.CLERIC).build(),
+            "gamble_spectator_t3", "슬롯머신 타워 III", 0, 300, 6.5,
+            EntityVisual.builder("minecraft:slime").blockbenchModel("semion-td:tower/gamble_slot_machine_t3")
+                    .scale(1.05).build(),
             List.of(
                     "누적 도박 점수가 가장 높은 도박꾼 하나를 집중 지원합니다.",
-                    "도박꾼 하나에는 구경꾼이 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기까지 연결됩니다.",
+                    "도박꾼 하나에는 슬롯머신이 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기까지 연결됩니다.",
                     "긍정 효과가 같은 눈의 I단계보다 3.5배로 증가하며, 약화 수치는 증가하지 않습니다.",
                     "눈 1~2는 능력치 2개 약화, 3~4는 능력치 2개 강화, 5~6은 네 능력치 모두 강화입니다.",
                     "눈 6이 나오면 다이아 {ability.faceSixDiamondReward:integer}개를 얻습니다.",
@@ -117,9 +119,24 @@ public final class GambleTowers {
             )
     );
 
+    public static final TowerType POKER_TABLE = TowerType.builder("gamble_poker_table", "포커 테이블")
+            .mineralCost(50).maxHealth(200).range(0).damage(0).attackIntervalTicks(20)
+            .visual(EntityVisual.builder("minecraft:slime")
+                    .blockbenchModel("semion-td:prop/blackjack_table").scale(0.5).build())
+            .description(List.of(
+                    "공격하지 않는 앞라인 타워입니다. 200~1000 다이아를 베팅해 한 번만 강화할 수 있습니다.",
+                    "52장 중 3장을 뽑습니다. 8 하이 이하는 파괴, 9~J 하이는 대실패, Q~A 하이·원페어는 일반 강화입니다.",
+                    "최대 체력 증가 = 베팅액 × 패 점수 / {ability.healthScoreDivisor:number}.",
+                    "패 점수: 9/10/J 하이 2/4/6, Q/K/A 하이 15/20/25, 원페어 30~42, 플러시 50, 스트레이트 55, 트리플·스트레이트 플러시 60.",
+                    "사망 시 반경 {ability.deathRadius:blocks} 내 적에게 최대 체력의 {ability.deathDamageRatio:percent}만큼 마법 피해를 줍니다.",
+                    "베팅액 × 패 점수가 {ability.specialScoreThreshold:integer} 이상인 플러시/스트레이트/트리플 이상은 사망 디버프를 1/2/3개 얻습니다.",
+                    "공격력 → 공격 속도 → 방어력 순서로 각각 {ability.debuffReduction:percent} 감소, {ability.debuffDurationTicks:seconds} 지속.",
+                    "점수가 부족한 상위 패는 체력만 얻습니다. 베팅 비용은 판매 환불가에 포함되지 않습니다."
+            )).build();
+
     private static final List<TowerType> ALL = List.of(
             DICE_T1, DICE_T2, DICE_T3, GAMBLER, KING, DARK_KING,
-            SPECTATOR_T1, SPECTATOR_T2, SPECTATOR_T3
+            SPECTATOR_T1, SPECTATOR_T2, SPECTATOR_T3, POKER_TABLE
     );
 
     static {

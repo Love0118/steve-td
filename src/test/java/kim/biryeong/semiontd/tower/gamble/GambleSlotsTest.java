@@ -62,7 +62,7 @@ final class GambleSlotsTest {
         assertEquals(90, pairs);
         assertEquals(6, triples);
         assertEquals(55.5555555556, total / 216, 0.000001);
-        assertEquals(0.9142857143, (total / 216 / 250) / (GambleRolls.expectedTwoDiceDelta() / 160), 0.000001);
+        assertEquals(0.9340659341, (total / 216 / 260) / (GambleRolls.expectedTwoDiceDelta() / 170), 0.000001);
         assertEquals(List.of("철 조각", "철", "구리", "금괴", "에메랄드", "다이아몬드"),
                 java.util.Arrays.stream(GambleSlots.Symbol.values()).map(GambleSlots.Symbol::displayName).toList());
     }
@@ -73,15 +73,51 @@ final class GambleSlotsTest {
         for (var type : List.of(GambleTowers.DICE_T1, GambleTowers.DICE_T2, GambleTowers.DICE_T3)) {
             var resolved = TowerBalanceRuntime.resolve(type);
             var exported = document.towers().stream().filter(t -> t.id().equals(type.id())).findFirst().orElseThrow();
-            assertEquals("semion-td:tower/gamble_dice_1", resolved.blockbenchModelId());
+            int tier = Integer.parseInt(type.id().substring(type.id().length() - 1));
+            assertEquals(GambleDiceVisuals.visual(tier, 1).blockbenchModelId(), resolved.blockbenchModelId());
             assertEquals(resolved.blockbenchModelId(), exported.visual().blockbenchModelId());
             assertEquals(resolved.visual().scale(), exported.visual().scale());
             assertFalse(exported.description().stream().anyMatch(line -> line.contains("{ability.")));
         }
-        assertEquals(3, document.upgrades().stream().filter(u -> u.id().equals("spin_slots") && u.mineralCost() == 250).count());
+        assertEquals(3, document.upgrades().stream().filter(u -> u.id().equals("spin_slots") && u.mineralCost() == 260).count());
         for (String id : GambleDiceVisuals.modelIds()) {
             assertNotNull(getClass().getResource("/model/" + id.replace(':', '/') + ".bbmodel"));
         }
+        assertEquals(18, GambleDiceVisuals.modelIds().stream().distinct().count());
+        for (var type : List.of(GambleTowers.SPECTATOR_T1, GambleTowers.SPECTATOR_T2, GambleTowers.SPECTATOR_T3)) {
+            int tier = Integer.parseInt(type.id().substring(type.id().length() - 1));
+            var resolved = TowerBalanceRuntime.resolve(type);
+            String model = "semion-td:tower/gamble_slot_machine" + (tier == 1 ? "" : "_t" + tier);
+            assertEquals(model, resolved.blockbenchModelId());
+            assertEquals(tier == 1 ? 10 : tier == 2 ? 100 : 300, resolved.maxHealth());
+            assertNotNull(getClass().getResource("/model/" + model.replace(':', '/') + ".bbmodel"));
+            assertTrue(resolved.displayName().contains("슬롯머신"));
+        }
+        var poker = document.towers().stream().filter(t -> t.id().equals(GambleTowers.POKER_TABLE.id())).findFirst().orElseThrow();
+        assertEquals("semion-td:prop/blackjack_table", poker.visual().blockbenchModelId());
+        assertFalse(poker.description().stream().anyMatch(line -> line.contains("{ability.")));
+    }
+
+    @Test
+    void pokerConfigBackfillsNewValuesAndRejectsInvalidDivisorsWithoutOverwritingCustomPrices() {
+        var defaults = TowerBalanceConfig.defaultConfig();
+        var partial = new TowerBalanceConfig(Map.of(), Map.of(
+                TowerBalanceConfig.upgradeKey(GambleTowers.GAMBLER.id(), GambleBet.ODD.upgradeId()), 90L), Map.of());
+        var merged = partial.withMissingDefaults(defaults);
+        merged.validateForRuntime();
+        assertEquals(200, merged.towers().get(GambleTowers.POKER_TABLE.id()).maxHealth());
+        assertEquals(50, merged.towers().get(GambleTowers.POKER_TABLE.id()).mineralCost());
+        assertEquals(17, merged.ability(GambleTowers.POKER_TABLE.id(), "healthScoreDivisor", -1));
+        assertEquals(15000, merged.ability(GambleTowers.POKER_TABLE.id(), "specialScoreThreshold", -1));
+        assertEquals(160, merged.ability(GambleTowers.POKER_TABLE.id(), "debuffDurationTicks", -1));
+        assertEquals(90L, merged.upgradeCosts().get(TowerBalanceConfig.upgradeKey(GambleTowers.GAMBLER.id(), GambleBet.ODD.upgradeId())));
+        var abilities = new LinkedHashMap<>(defaults.abilities());
+        var poker = new LinkedHashMap<>(abilities.get(GambleTowers.POKER_TABLE.id()));
+        poker.put("healthScoreDivisor", 0.0);
+        abilities.put(GambleTowers.POKER_TABLE.id(), poker);
+        var invalid = new TowerBalanceConfig(defaults.towers(), defaults.upgradeCosts(), abilities,
+                defaults.illusionCloneQueue(), defaults.villagerAdv(), defaults.schemaVersion());
+        assertThrows(IllegalArgumentException.class, invalid::validateForRuntime);
     }
 
     @Test

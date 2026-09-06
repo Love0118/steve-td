@@ -1,5 +1,6 @@
 package kim.biryeong.semiontd.ui;
 
+import kim.biryeong.semiontd.tower.gamble.PokerTableTower;
 import de.tomalbrc.avatarrenderer.AvatarRendererMod;
 import de.tomalbrc.avatarrenderer.impl.AvatarRenderer;
 import de.tomalbrc.avatarrenderer.impl.SkinLoader;
@@ -764,6 +765,11 @@ public final class SemionDialogService {
             }
         } else {
             for (TowerUpgradeOption option : upgrades) {
+                if (selectedTower instanceof PokerTableTower poker) {
+                    actions.add(actionButton("포커 베팅 · 200~1000 다이아", PokerTableDialog.command(poker),
+                            "슬라이더로 금액을 정해 카드 3장을 뽑습니다. 한 번만 베팅할 수 있습니다."));
+                    continue;
+                }
                 boolean mineralAffordable = economy.diamond() >= option.mineralCost();
                 boolean requirementsMet = selectedTower.meetsUpgradeRequirements(
                         game.playerLane(player.getUUID()).orElse(null), option);
@@ -866,6 +872,11 @@ public final class SemionDialogService {
             var managementPosition = tower.managementPosition();
             List<TowerUpgradeOption> upgrades = ProductionTowerService.availableUpgrades(game, player.getUUID(), managementPosition);
             for (TowerUpgradeOption option : upgrades) {
+                if (tower instanceof PokerTableTower poker) {
+                    actions.add(actionButton("포커 베팅 · 200~1000 다이아", PokerTableDialog.command(poker),
+                            "슬라이더로 금액을 정해 카드 3장을 뽑습니다. 한 번만 베팅할 수 있습니다."));
+                    continue;
+                }
                 boolean mineralAffordable = semionPlayer.economy().diamond() >= option.mineralCost();
                 boolean requirementsMet = tower.meetsUpgradeRequirements(
                         game.playerLane(player.getUUID()).orElse(null), option);

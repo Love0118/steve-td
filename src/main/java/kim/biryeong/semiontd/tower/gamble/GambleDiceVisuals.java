@@ -6,11 +6,13 @@ import kim.biryeong.semiontd.entity.visual.EntityVisual;
 
 /** Six static orientations keep the rolled face upward without a separate animation controller. */
 public final class GambleDiceVisuals {
-    private static final List<String> MODEL_IDS = IntStream.rangeClosed(1, 6)
-            .mapToObj(face -> "semion-td:tower/gamble_dice_" + face).toList();
-    private static final List<List<EntityVisual>> VISUALS = List.of(0.75, 0.90, 1.05).stream()
-            .map(scale -> MODEL_IDS.stream().map(id -> EntityVisual.builder("minecraft:slime")
-                    .blockbenchModel(id).scale(scale).build()).toList()).toList();
+    private static final List<List<String>> TIER_MODEL_IDS = IntStream.rangeClosed(1, 3)
+            .mapToObj(tier -> IntStream.rangeClosed(1, 6).mapToObj(face ->
+                    "semion-td:tower/gamble_dice_" + (tier == 1 ? "" : "t" + tier + "_") + face).toList()).toList();
+    private static final List<String> MODEL_IDS = TIER_MODEL_IDS.stream().flatMap(List::stream).toList();
+    private static final List<List<EntityVisual>> VISUALS = IntStream.range(0, 3)
+            .mapToObj(tier -> TIER_MODEL_IDS.get(tier).stream().map(id -> EntityVisual.builder("minecraft:slime")
+                    .blockbenchModel(id).scale(List.of(0.75, 0.90, 1.05).get(tier)).build()).toList()).toList();
 
     private GambleDiceVisuals() {
     }

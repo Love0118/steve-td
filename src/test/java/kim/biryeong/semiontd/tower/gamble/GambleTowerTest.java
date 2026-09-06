@@ -269,11 +269,11 @@ final class GambleTowerTest {
     }
 
     @Test
-    void catalogUsesThreeStartersConfiguredUpgradeCostsAndCreativeClassification() {
+    void catalogUsesFourStartersConfiguredUpgradeCostsAndCreativeClassification() {
         List<ProductionTowerCatalog.CatalogEntry> entries = ProductionTowerCatalog.all().stream()
                 .filter(entry -> GambleTowers.isGambleTower(entry.type())).toList();
-        assertEquals(9, entries.size());
-        assertEquals(3, entries.stream().filter(ProductionTowerCatalog.CatalogEntry::starter).count());
+        assertEquals(10, entries.size());
+        assertEquals(4, entries.stream().filter(ProductionTowerCatalog.CatalogEntry::starter).count());
         assertTrue(entries.stream().filter(ProductionTowerCatalog.CatalogEntry::starter)
                 .map(entry -> entry.type().id()).toList().containsAll(List.of(
                         GambleTowers.DICE_T1.id(), GambleTowers.GAMBLER.id(), GambleTowers.SPECTATOR_T1.id())));
@@ -317,9 +317,9 @@ final class GambleTowerTest {
                 TowerUpgradeOption option = ProductionTowerCatalog.upgrade(gamblerType, bet.upgradeId())
                         .orElseThrow();
                 assertEquals(switch (bet) {
-                    case ODD, EVEN -> 80;
-                    case TWO_DICE -> 160;
-                    case SLOTS -> 250;
+                    case ODD, EVEN -> 85;
+                    case TWO_DICE -> 170;
+                    case SLOTS -> 260;
                 }, option.mineralCost());
                 assertFalse(gambler.upgradeCostAddsToSaleValue(option));
             }
@@ -339,7 +339,8 @@ final class GambleTowerTest {
                 GambleTowers.SPECTATOR_T3.range()));
         assertTrue(GambleTowers.all().stream()
                 .filter(type -> GambleTowers.isDice(type) || GambleTowers.isSpectator(type))
-                .allMatch(type -> Math.abs(type.maxHealth() - 10.0) < EPSILON));
+                .allMatch(type -> Math.abs(type.maxHealth()
+                        - (type.id().endsWith("t3") ? 300 : type.id().endsWith("t2") ? 100 : 10)) < EPSILON));
         assertTrue(JobRegistry.creativeBuilders().stream().anyMatch(job -> job.id().equals(GambleTowerJob.ID)));
         assertFalse(JobRegistry.officialBuilders().stream().anyMatch(job -> job.id().equals(GambleTowerJob.ID)));
         assertEquals("semion-td:gamble_towers", new GambleTowerJob().id().toString());
@@ -458,8 +459,8 @@ final class GambleTowerTest {
     void defaultsMergeMissingGambleValuesAndRejectInvalidOnes() throws Exception {
         TowerBalanceConfig defaults = TowerBalanceConfig.defaultConfig();
         GambleTowers.all().forEach(type -> assertTrue(defaults.towers().containsKey(type.id())));
-        assertEquals(80, defaults.upgradeCost(GambleTowers.GAMBLER.id(), GambleBet.ODD.upgradeId(), -1));
-        assertEquals(160, defaults.upgradeCost(
+        assertEquals(85, defaults.upgradeCost(GambleTowers.GAMBLER.id(), GambleBet.ODD.upgradeId(), -1));
+        assertEquals(170, defaults.upgradeCost(
                 GambleTowers.GAMBLER.id(), GambleBet.TWO_DICE.upgradeId(), -1));
         TowerBalanceConfig partial = new TowerBalanceConfig(Map.of(), Map.of(), Map.of(
                 GambleBalance.GLOBAL_ID, Map.of("damagePerScore", 0.2))).withMissingDefaults(defaults);

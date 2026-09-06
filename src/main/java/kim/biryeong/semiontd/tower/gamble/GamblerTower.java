@@ -193,7 +193,23 @@ public final class GamblerTower extends ProductionTower {
 
     @Override
     public boolean meetsUpgradeRequirements(PlayerLane lane, TowerUpgradeOption option) {
-        return GambleBet.fromUpgradeId(option.id()).isEmpty() || !state().atScoreCap();
+        return GambleBet.fromUpgradeId(option.id())
+                .map(bet -> !state().atScoreCap() && hasRequiredSupport(lane, bet)).orElse(true);
+    }
+
+    private boolean hasRequiredSupport(PlayerLane lane, GambleBet bet) {
+        if (bet == GambleBet.ODD || bet == GambleBet.EVEN) {
+            return true;
+        }
+        return lane != null && lane.towers().stream().anyMatch(tower ->
+                ownerPlayer().equals(tower.ownerPlayer())
+                        && (bet == GambleBet.TWO_DICE ? GambleTowers.isDice(tower.type())
+                        : GambleTowers.isSpectator(tower.type())) && !tower.isDestroyed(lane));
+    }
+
+    @Override
+    public boolean showsUnavailableUpgrade(PlayerLane lane, TowerUpgradeOption option) {
+        return GambleBet.fromUpgradeId(option.id()).isPresent() && !state().atScoreCap();
     }
 
     @Override
@@ -223,6 +239,7 @@ public final class GamblerTower extends ProductionTower {
                     "비용은 판매 환불가에 포함되지 않습니다."
             );
             case TWO_DICE -> List.of(
+                    "내 라인에 살아 있는 내 주사위 타워가 필요합니다 (단계·거리 무관).",
                     "주사위 두 개를 굴려 눈금의 합에 비례해 유닛을 업그레이드합니다.",
                     "합이 2~5면 능력치가 크게 내려가고, 6~12면 크게 올라갑니다.",
                     "합이 " + GambleBalance.twoDiceCompoundMinSum()
@@ -338,6 +355,7 @@ public final class GamblerTower extends ProductionTower {
 
     private static List<String> slotTooltipLines() {
         ArrayList<String> lines = new ArrayList<>();
+        lines.add("내 라인에 살아 있는 내 슬롯머신 타워가 필요합니다 (단계·거리 무관).");
         lines.add("6종 심볼을 같은 확률로 세 칸에 뽑습니다. 순서와 관계없이 일치를 판정합니다.");
         lines.add("전부 다름 55.56% / 2개 일치 41.67% / 3개 일치 2.78%");
         GambleSlots.Symbol[] symbols = GambleSlots.Symbol.values();

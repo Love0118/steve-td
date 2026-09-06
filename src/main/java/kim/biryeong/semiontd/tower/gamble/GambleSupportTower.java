@@ -46,6 +46,11 @@ public final class GambleSupportTower extends ProductionTower {
     }
 
     @Override
+    public boolean canUseBasicAttacks() {
+        return false;
+    }
+
+    @Override
     public boolean canChaseTargets() {
         return false;
     }

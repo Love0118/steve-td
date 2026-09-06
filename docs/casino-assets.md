@@ -40,3 +40,7 @@ python .agents/skills/semiontd-blockbench-import-library/scripts/inspect_bbmodel
 두 파일의 BIL 정적 검사와 Blockbench 불러오기/텍스처 표시를 확인했습니다. 실제 서버의 BIL holder 생성, warmup, Polymer 팩 생성 및 클라이언트 표시 검증은 게임 엔티티에 연결할 때 수행해야 합니다. 연결 후 모델을 수정하면 서버를 재시작하고 리소스팩을 다시 받아야 합니다.
 
 2026-09-06에 `./gradlew.bat test runGameTest remapJar --console=plain --no-daemon`을 실행했으나, `repo.biryeong.kim`의 HTTP 521 응답으로 BIL 등 의존성을 가져오지 못해 프로젝트 설정 단계에서 실패했습니다. 테스트와 JAR 패키징은 완료되지 않았습니다.
+
+## 생산 타워 적용
+
+주사위 3개 단계별 여섯 방향 모델과 슬롯머신 3개 단계 모델, 포커 테이블 적용 정보는 [개편 문서](gamble-poker-and-support-tiers.ko.md)를 참고하세요.

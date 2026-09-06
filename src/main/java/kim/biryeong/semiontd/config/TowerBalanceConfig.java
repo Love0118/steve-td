@@ -1,5 +1,6 @@
 package kim.biryeong.semiontd.config;
 
+import kim.biryeong.semiontd.tower.gamble.GamblePoker;
 import static kim.biryeong.semiontd.tower.end.EndAbilityKey.*;
 
 import java.util.Collections;
@@ -1980,6 +1981,10 @@ public record TowerBalanceConfig(
     }
 
     private void validateGambleAbilities() {
+        String poker = GambleTowers.POKER_TABLE.id();
+        validatePositive(poker, "healthScoreDivisor", "specialScoreThreshold", "deathRadius");
+        validateRatios(poker, "deathDamageRatio", "debuffReduction");
+        validateIntegral(poker, false, "debuffDurationTicks");
         String global = GambleBalance.GLOBAL_ID;
         validatePositive(global, "slotDifferentScore");
         double different = ability(global, "slotDifferentScore", GambleSlots.DIFFERENT_SCORE);
@@ -4744,6 +4749,8 @@ public record TowerBalanceConfig(
     }
 
     private static void putGambleUpgrades(LinkedHashMap<String, Long> upgradeCosts) {
+        putUpgrade(upgradeCosts, GambleTowers.POKER_TABLE,
+                GamblePoker.UPGRADE_ID, 200);
         putUpgrade(upgradeCosts, GambleTowers.DICE_T1, GambleTowers.DICE_T2.id(), 100);
         putUpgrade(upgradeCosts, GambleTowers.DICE_T2, GambleTowers.DICE_T3.id(), 200);
         putUpgrade(upgradeCosts, GambleTowers.SPECTATOR_T1, GambleTowers.SPECTATOR_T2.id(), 100);
@@ -4753,15 +4760,23 @@ public record TowerBalanceConfig(
             for (GambleBet bet : GambleBet.values()) {
                 putUpgrade(upgradeCosts, gambler, bet.upgradeId(),
                         switch (bet) {
-                            case ODD, EVEN -> 80;
-                            case TWO_DICE -> 160;
-                            case SLOTS -> 250;
+                            case ODD, EVEN -> 85;
+                            case TWO_DICE -> 170;
+                            case SLOTS -> 260;
                         });
             }
         }
     }
 
     private static void putGambleAbilities(LinkedHashMap<String, Map<String, Double>> abilities) {
+        putAbilities(abilities, GambleTowers.POKER_TABLE.id(), Map.of(
+                "healthScoreDivisor", 17.0,
+                "specialScoreThreshold", 15000.0,
+                "deathRadius", 2.5,
+                "deathDamageRatio", 0.1,
+                "debuffReduction", 0.2,
+                "debuffDurationTicks", 160.0
+        ));
         LinkedHashMap<String, Double> global = new LinkedHashMap<>();
         global.put("oddEvenWinScore", GambleBalance.ODD_EVEN_WIN_SCORE);
         global.put("oddEvenLossScore", GambleBalance.ODD_EVEN_LOSS_SCORE);
