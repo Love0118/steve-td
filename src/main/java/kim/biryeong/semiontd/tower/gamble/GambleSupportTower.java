@@ -13,6 +13,7 @@ import kim.biryeong.semiontd.api.area.TowerAreaEffectRequest;
 import kim.biryeong.semiontd.api.area.TowerAreaTargetMode;
 import kim.biryeong.semiontd.effect.TimedEffectType;
 import kim.biryeong.semiontd.entity.tower.SemionTowerEntity;
+import kim.biryeong.semiontd.entity.visual.EntityVisual;
 import kim.biryeong.semiontd.entity.tower.vfx.TowerVfxService;
 import kim.biryeong.semiontd.game.GridPosition;
 import kim.biryeong.semiontd.game.PlayerLane;
@@ -49,6 +50,16 @@ public final class GambleSupportTower extends ProductionTower {
         return false;
     }
 
+    @Override
+    public EntityVisual visual() {
+        if (!GambleTowers.isDice(type())) {
+            return super.visual();
+        }
+        int tier = type().id().equals(GambleTowers.DICE_T3.id()) ? 3
+                : type().id().equals(GambleTowers.DICE_T2.id()) ? 2 : 1;
+        return GambleDiceVisuals.visual(tier, lastFace);
+    }
+
     /**
      * The configured range is a support radius, not a combat range. Keeping the
      * entity attack range at zero also prevents attack animations and zero-damage hits.
@@ -73,6 +84,7 @@ public final class GambleSupportTower extends ProductionTower {
         lastFace = 0;
         lastDiamondReward = 0L;
         super.resetForRound(lane);
+        onStateChanged(lane);
     }
 
     @Override
@@ -118,6 +130,7 @@ public final class GambleSupportTower extends ProductionTower {
         int face = minimum + source.getRandom().nextInt(7 - minimum);
         activeEffects = GambleSupportRolls.roll(type(), face, source.getRandom());
         lastFace = face;
+        onStateChanged(lane);
         lastRollCounts[face - 1] = 1;
         lastDiamondReward = GambleSpectatorRewards.awardFaceSix(ownerPlayer(), type(), face);
         GambleRollLabels.show(lane, ownerPlayer(), this, sourceId, face);

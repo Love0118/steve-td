@@ -47,6 +47,105 @@ import net.minecraft.world.phys.Vec3;
 import xyz.nucleoid.map_templates.BlockBounds;
 
 public final class GambleGameTest {
+    @GameTest(maxTicks = 120)
+    public void gamblerBasicAttackTracksPhysicalAndMagicDamageAndMagicGrowth(GameTestHelper context) {
+        TowerBalanceConfig defaults = TowerBalanceConfig.defaultConfig();
+        TowerBalanceRuntime.apply(defaults);
+        UUID owner = stableUuid("gamble-mixed-damage");
+        PlayerLane lane = testLane(context, owner);
+        TeamLaneGroup group = new TeamLaneGroup(TeamId.RED, BossMonster.defaultBoss(TeamId.RED));
+        group.addLane(lane);
+        prepareFloor(context);
+        SemionMonsterEntity target = null;
+        try {
+            GamblerTower gambler = gambler(owner, floor(context, 4, 2, 3));
+            lane.addTower(gambler);
+            gambler.markWaveStarted(1);
+            SemionTowerEntity source = entity(lane, gambler);
+            target = spawnTarget(context, lane, source.position().add(0, 0, 2), "mixed-target");
+            require(close(source.attackDamageAmount(target), 10), "Base attack must total 5 physical plus 5 magic.");
+            source.damageTargetResult(target, source.attackDamageAmount(target));
+            require(close(gambler.roundPhysicalDamageDealt(), 5), "Physical damage must be recorded separately.");
+            require(close(gambler.roundMagicDamageDealt(), 5), "Magic damage must be recorded separately.");
+            gambler.setData(GamblerTower.STATE,
+                    gambler.state().recordStat(GambleStat.MAGIC_DAMAGE, 35, 5, 70, "magic growth"));
+            gambler.onStateChanged(lane);
+            source.damageTargetResult(target, source.attackDamageAmount(target));
+            require(close(gambler.roundPhysicalDamageDealt(), 10), "Magic growth must not raise physical damage.");
+            require(close(gambler.roundMagicDamageDealt(), 45), "Magic growth must add the same +35 as physical growth.");
+            require(close(target.runtimeMonster().health(), 45), "Both damage components must reach runtime health.");
+            context.succeed();
+        } finally {
+            if (target != null) target.discard();
+            group.closeRuntime();
+            TowerBalanceRuntime.apply(defaults);
+        }
+    }
+
+    @GameTest(maxTicks = 120)
+    public void diceRollSwitchesBilOrientationAndPreservesItAcrossUpgrade(GameTestHelper context) {
+        TowerBalanceRuntime.apply(TowerBalanceConfig.defaultConfig());
+        UUID owner = stableUuid("gamble-dice-model");
+        PlayerLane lane = testLane(context, owner);
+        TeamLaneGroup group = new TeamLaneGroup(TeamId.RED, BossMonster.defaultBoss(TeamId.RED));
+        group.addLane(lane);
+        prepareFloor(context);
+        try {
+            GambleSupportTower dice = support(GambleTowers.DICE_T1, owner, floor(context, 4, 2, 3));
+            lane.addTower(dice);
+            SemionTowerEntity source = entity(lane, dice);
+            for (int face = 1; face <= 6; face++) {
+                long seed = 0;
+                while (net.minecraft.util.RandomSource.create(seed).nextInt(6) != face - 1) seed++;
+                source.getRandom().setSeed(seed);
+                dice.onWaveStarted(lane, face);
+                require(dice.lastRollCounts()[face - 1] == 1, "The visual must use the actual round roll.");
+                require(source.blockbenchModelId().equals("semion-td:tower/gamble_dice_" + face),
+                        "The rolled face must select the matching orientation resource.");
+                require(source.hasBilModelHolder(), "Each orientation must create a real BIL holder.");
+                require(source.getPolymerEntityType(null) == net.minecraft.world.entity.EntityType.BLOCK_DISPLAY,
+                        "Dice must use the BIL display path.");
+                require(source.runtimeTower() == dice, "Changing the model must retain tower interaction ownership.");
+            }
+            GambleSupportTower upgraded = support(GambleTowers.DICE_T2, owner, dice.originalPosition());
+            upgraded.copyFrom(dice, 100);
+            require(lane.replaceTower(dice, upgraded), "Dice upgrade must replace the tower through the shared path.");
+            require(entity(lane, upgraded).blockbenchModelId().endsWith("_6"), "Upgrade must retain the rolled face.");
+            upgraded.resetForRound(lane);
+            require(entity(lane, upgraded).blockbenchModelId().endsWith("_1"), "Preparation resets the die orientation.");
+            context.succeed();
+        } finally {
+            group.closeRuntime();
+        }
+    }
+
+    @GameTest(maxTicks = 120)
+    public void slotUpgradeCharges250AndNeverAddsToSaleValue(GameTestHelper context) {
+        ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
+        UUID owner = stableUuid("gamble-slot-cost");
+        SemionGame game = startedGambleGame(context, owner, "gamble-slot-cost");
+        try {
+            PlayerLane lane = game.playerLane(owner).orElseThrow();
+            GridPosition position = emptyPosition(lane);
+            GamblerTower before = gambler(owner, position);
+            lane.addTower(before);
+            game.players().get(owner).economy().addMineral(1_000);
+            long money = game.players().get(owner).economy().mineral();
+            long paid = before.paidMineralCost();
+            require(ProductionTowerService.upgradeTower(game, owner, position, GambleBet.SLOTS.upgradeId())
+                    == TowerUpgradeResult.SUCCESS, "Slot bet must use the normal upgrade service.");
+            GamblerTower after = (GamblerTower) lane.towers().stream()
+                    .filter(t -> t.originalPosition().equals(position)).findFirst().orElseThrow();
+            require(game.players().get(owner).economy().mineral() == money - 250, "Slot must charge exactly 250.");
+            require(after.paidMineralCost() == paid, "Slot cost must not inflate sale refunds.");
+            require(after.state().totalBets() == 1 && after.gambleScore() > 0, "Slot must record one positive result.");
+            require(after.state().lastResult().contains("["), "Result must display all three reel symbols.");
+            context.succeed();
+        } finally {
+            game.close();
+        }
+    }
+
     private static final List<TimedEffectType> SUPPORT_EFFECTS = List.of(
             TimedEffectType.TOWER_FLAT_RANGE_BONUS,
             TimedEffectType.TOWER_FLAT_RANGE_REDUCTION,
@@ -320,7 +419,7 @@ public final class GambleGameTest {
         try {
             lane.addTower(original);
             GambleState upgradedState = new GambleState(
-                    50.0, 35.0, 0.5, 0.5,
+                    50.0, 35.0, 0.0, 0.5, 0.5,
                     120.0, Set.of(), 4, "능력치 테스트"
             );
             original.setData(GamblerTower.STATE, upgradedState);
@@ -380,11 +479,11 @@ public final class GambleGameTest {
             lane.addTower(kingCandidate);
             lane.addTower(darkCandidate);
             GambleState kingState = new GambleState(
-                    50.0, 5.0, 0.5, 0.0,
+                    50.0, 5.0, 0.0, 0.5, 0.0,
                     400.0, Set.of(GambleAbility.LOSS_INSURANCE), 12, "도박왕 전직 테스트"
             );
             GambleState darkState = new GambleState(
-                    -20.0, -2.0, -0.5, 0.0,
+                    -20.0, -2.0, 0.0, -0.5, 0.0,
                     -200.0, Set.of(), 4, "어둠의 도박왕 전직 테스트"
             );
             kingCandidate.setData(GamblerTower.STATE, kingState);
@@ -482,7 +581,7 @@ public final class GambleGameTest {
                     TowerBalanceRuntime.resolve(GambleTowers.GAMBLER), owner, TeamId.RED, 1,
                     position, position);
             gambler.setData(GamblerTower.STATE, new GambleState(
-                    10_000.0, 1_000.0, 100.0, 0.0,
+                    10_000.0, 1_000.0, 0.0, 100.0, 0.0,
                     500.0, Set.of(GambleAbility.LOSS_INSURANCE), 99, "최대 점수"
             ));
             lane.addTower(gambler);
@@ -490,11 +589,12 @@ public final class GambleGameTest {
             long before = game.players().get(owner).economy().mineral();
 
             require(ProductionTowerService.availableUpgrades(game, owner, position).isEmpty(),
-                    "All three bet buttons must disappear at the maximum score.");
-            require(ProductionTowerService.upgradeTower(
-                            game, owner, position, GambleBet.ODD.upgradeId())
-                            == TowerUpgradeResult.UPGRADE_REQUIREMENTS_NOT_MET,
-                    "A direct upgrade request must be rejected after the buttons close.");
+                    "All bet buttons must disappear at the maximum score.");
+            for (GambleBet bet : GambleBet.values()) {
+                require(ProductionTowerService.upgradeTower(game, owner, position, bet.upgradeId())
+                                == TowerUpgradeResult.UPGRADE_REQUIREMENTS_NOT_MET,
+                        "Every direct bet request must be rejected after the buttons close.");
+            }
             require(game.players().get(owner).economy().mineral() == before,
                     "Rejected capped gambling must not charge diamonds.");
             context.succeed();
@@ -518,7 +618,7 @@ public final class GambleGameTest {
                     TowerBalanceRuntime.resolve(GambleTowers.GAMBLER), owner, TeamId.RED, 1,
                     position, position);
             gambler.setData(GamblerTower.STATE, new GambleState(
-                    4_000.0, 400.0, 40.0, 20.0,
+                    4_000.0, 400.0, 0.0, 40.0, 20.0,
                     600.0, Set.of(GambleAbility.LOSS_INSURANCE), 30, "이전 상한"
             ));
             lane.addTower(gambler);

@@ -34,6 +34,7 @@ import kim.biryeong.semiontd.tower.frost.FrostBalance;
 import kim.biryeong.semiontd.tower.frost.FrostTowers;
 import kim.biryeong.semiontd.tower.gamble.GambleBalance;
 import kim.biryeong.semiontd.tower.gamble.GambleBet;
+import kim.biryeong.semiontd.tower.gamble.GambleSlots;
 import kim.biryeong.semiontd.tower.gamble.GambleTowers;
 import kim.biryeong.semiontd.tower.hero.HeroCompanionRole;
 import kim.biryeong.semiontd.tower.hero.HeroPartyBalance;
@@ -1980,6 +1981,26 @@ public record TowerBalanceConfig(
 
     private void validateGambleAbilities() {
         String global = GambleBalance.GLOBAL_ID;
+        validatePositive(global, "slotDifferentScore");
+        double different = ability(global, "slotDifferentScore", GambleSlots.DIFFERENT_SCORE);
+        double previousPair = different;
+        double previousTriple = 0.0;
+        // Preserve the current dice jackpot ceiling, including its two-stat split.
+        double diceMaximum = GambleSlots.MAX_SCORE;
+        for (GambleSlots.Symbol symbol : GambleSlots.Symbol.values()) {
+            validatePositive(global, symbol.pairKey(), symbol.tripleKey());
+            double pair = ability(global, symbol.pairKey(), symbol.defaultPairScore());
+            double triple = ability(global, symbol.tripleKey(), symbol.defaultTripleScore());
+            if (pair < previousPair || triple < previousTriple || triple < pair
+                    || pair > diceMaximum / 2.0 || triple > diceMaximum) {
+                throw new IllegalArgumentException("Slot rewards must be ordered and stay within the dice jackpot ceiling.");
+            }
+            previousPair = pair;
+            previousTriple = triple;
+        }
+        for (TowerType type : List.of(GambleTowers.GAMBLER, GambleTowers.KING, GambleTowers.DARK_KING)) {
+            validatePositive(type.id(), "baseMagicDamage");
+        }
         validatePositive(global,
                 "oddEvenWinScore", "oddEvenLossScore", "maxHealthPerScore", "damagePerScore",
                 "rangePerScore", "splashRadiusPerScore", "baseSplashRadius",
@@ -4731,7 +4752,11 @@ public record TowerBalanceConfig(
                 GambleTowers.GAMBLER, GambleTowers.KING, GambleTowers.DARK_KING)) {
             for (GambleBet bet : GambleBet.values()) {
                 putUpgrade(upgradeCosts, gambler, bet.upgradeId(),
-                        bet == GambleBet.TWO_DICE ? 160 : 80);
+                        switch (bet) {
+                            case ODD, EVEN -> 80;
+                            case TWO_DICE -> 160;
+                            case SLOTS -> 250;
+                        });
             }
         }
     }
@@ -4742,6 +4767,11 @@ public record TowerBalanceConfig(
         global.put("oddEvenLossScore", GambleBalance.ODD_EVEN_LOSS_SCORE);
         global.put("maxHealthPerScore", GambleBalance.MAX_HEALTH_PER_SCORE);
         global.put("damagePerScore", GambleBalance.DAMAGE_PER_SCORE);
+        global.put("slotDifferentScore", GambleSlots.DIFFERENT_SCORE);
+        for (GambleSlots.Symbol symbol : GambleSlots.Symbol.values()) {
+            global.put(symbol.pairKey(), symbol.defaultPairScore());
+            global.put(symbol.tripleKey(), symbol.defaultTripleScore());
+        }
         global.put("rangePerScore", GambleBalance.RANGE_PER_SCORE);
         global.put("splashRadiusPerScore", GambleBalance.SPLASH_RADIUS_PER_SCORE);
         global.put("baseSplashRadius", GambleBalance.BASE_SPLASH_RADIUS);
@@ -4775,10 +4805,13 @@ public record TowerBalanceConfig(
         global.put("maxGambleScore", GambleBalance.MAX_GAMBLE_SCORE);
         putAbilities(abilities, GambleBalance.GLOBAL_ID, global);
 
+        putAbilities(abilities, GambleTowers.GAMBLER.id(), Map.of("baseMagicDamage", 5.0));
         putAbilities(abilities, GambleTowers.KING.id(), Map.of(
+                "baseMagicDamage", 20.0,
                 "splashRadiusBonus", GambleBalance.KING_SPLASH_RADIUS_BONUS
         ));
         putAbilities(abilities, GambleTowers.DARK_KING.id(), Map.of(
+                "baseMagicDamage", 22.0,
                 "splashRadiusBonus", GambleBalance.DARK_KING_SPLASH_RADIUS_BONUS
         ));
 

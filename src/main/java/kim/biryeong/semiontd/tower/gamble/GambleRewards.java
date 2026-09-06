@@ -7,7 +7,8 @@ public final class GambleRewards {
     private static final GambleStat[] ROLLABLE_STATS = {
             GambleStat.MAX_HEALTH,
             GambleStat.DAMAGE,
-            GambleStat.RANGE
+            GambleStat.RANGE,
+            GambleStat.MAGIC_DAMAGE
     };
 
     private GambleRewards() {

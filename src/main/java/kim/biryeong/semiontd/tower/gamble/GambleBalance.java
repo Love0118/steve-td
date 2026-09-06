@@ -108,7 +108,7 @@ public final class GambleBalance {
     public static double statDelta(GambleStat stat, double score) {
         double perScore = switch (stat) {
             case MAX_HEALTH -> global("maxHealthPerScore", MAX_HEALTH_PER_SCORE);
-            case DAMAGE -> global("damagePerScore", DAMAGE_PER_SCORE);
+            case DAMAGE, MAGIC_DAMAGE -> global("damagePerScore", DAMAGE_PER_SCORE);
             case RANGE -> global("rangePerScore", RANGE_PER_SCORE);
             case SPLASH_RADIUS -> global("splashRadiusPerScore", SPLASH_RADIUS_PER_SCORE);
         };
@@ -117,6 +117,11 @@ public final class GambleBalance {
 
     public static int minimumRoll(TowerType type) {
         return Math.max(1, Math.min(6, TowerBalanceRuntime.abilityInt(type.id(), "minimumRoll", 1)));
+    }
+
+    public static double baseMagicDamage(TowerType type) {
+        double fallback = GambleTowers.isKing(type) ? 20.0 : GambleTowers.isDarkKing(type) ? 22.0 : 5.0;
+        return TowerBalanceRuntime.ability(type.id(), "baseMagicDamage", fallback);
     }
 
     public static double supportPowerMultiplier(TowerType type) {

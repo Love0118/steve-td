@@ -181,7 +181,7 @@ final class GambleTowerTest {
                     OWNER, TeamId.RED, 1,
                     new GridPosition(0, 64, 0), new GridPosition(0, 64, 0));
             gambler.setData(GamblerTower.STATE, new GambleState(
-                    10_000.0, 1_000.0, 100.0, 50.0,
+                    10_000.0, 1_000.0, 0.0, 100.0, 50.0,
                     2_000.0, Set.of(GambleAbility.LOSS_INSURANCE), 99, "이전 상한"
             ));
             gambler.syncMaxHealth(gambler.effectBaseMaxHealth(), false);
@@ -227,8 +227,9 @@ final class GambleTowerTest {
         assertEquals(0, GambleRewards.missingAbilities(all).size());
         assertEquals(GambleAbility.LOSS_INSURANCE, GambleRewards.chooseMissing(GambleState.EMPTY, 0));
         assertThrows(IllegalStateException.class, () -> GambleRewards.chooseMissing(all, 0));
-        assertEquals(3, GambleRewards.rollableStatCount());
-        assertEquals(GambleStat.MAX_HEALTH, GambleRewards.chooseStat(3));
+        assertEquals(4, GambleRewards.rollableStatCount());
+        assertEquals(GambleStat.MAGIC_DAMAGE, GambleRewards.chooseStat(3));
+        assertEquals(GambleStat.MAX_HEALTH, GambleRewards.chooseStat(4));
         assertFalse(java.util.stream.IntStream.range(0, 12)
                 .mapToObj(GambleRewards::chooseStat)
                 .anyMatch(stat -> stat == GambleStat.SPLASH_RADIUS));
@@ -308,14 +309,18 @@ final class GambleTowerTest {
                 && line.contains("체력 +200") && line.contains("공격력 +20")));
         assertTrue(gambler.type().maxHealth() >= IllagerTowers.T1_PILLAGER.maxHealth());
         assertTrue(gambler.type().range() >= IllagerTowers.T1_PILLAGER.range());
-        assertTrue(gambler.type().damage() * IllagerTowers.T1_PILLAGER.attackIntervalTicks()
+        assertTrue((gambler.type().damage() + gambler.magicAttackDamage(null)) * IllagerTowers.T1_PILLAGER.attackIntervalTicks()
                 > IllagerTowers.T1_PILLAGER.damage() * gambler.type().attackIntervalTicks());
         for (var gamblerType : List.of(
                 GambleTowers.GAMBLER, GambleTowers.KING, GambleTowers.DARK_KING)) {
             for (GambleBet bet : GambleBet.values()) {
                 TowerUpgradeOption option = ProductionTowerCatalog.upgrade(gamblerType, bet.upgradeId())
                         .orElseThrow();
-                assertEquals(bet == GambleBet.TWO_DICE ? 160 : 80, option.mineralCost());
+                assertEquals(switch (bet) {
+                    case ODD, EVEN -> 80;
+                    case TWO_DICE -> 160;
+                    case SLOTS -> 250;
+                }, option.mineralCost());
                 assertFalse(gambler.upgradeCostAddsToSaleValue(option));
             }
         }
@@ -352,11 +357,13 @@ final class GambleTowerTest {
         assertEquals(null, GambleTowers.promotionTarget(GambleTowers.DARK_KING, 1_000.0));
 
         assertEquals(400.0, GambleTowers.KING.maxHealth(), EPSILON);
-        assertEquals(40.0, GambleTowers.KING.damage(), EPSILON);
+        assertEquals(20.0, GambleTowers.KING.damage(), EPSILON);
+        assertEquals(20.0, GambleBalance.baseMagicDamage(GambleTowers.KING), EPSILON);
         assertEquals(7.5, GambleTowers.KING.range(), EPSILON);
         assertEquals(8, GambleTowers.KING.attackIntervalTicks());
         assertEquals(440.0, GambleTowers.DARK_KING.maxHealth(), EPSILON);
-        assertEquals(44.0, GambleTowers.DARK_KING.damage(), EPSILON);
+        assertEquals(22.0, GambleTowers.DARK_KING.damage(), EPSILON);
+        assertEquals(22.0, GambleBalance.baseMagicDamage(GambleTowers.DARK_KING), EPSILON);
         assertEquals(8.0, GambleTowers.DARK_KING.range(), EPSILON);
         assertEquals(8, GambleTowers.DARK_KING.attackIntervalTicks());
         assertEquals(3.0, GambleBalance.gamblerSplashRadius(GambleTowers.KING), EPSILON);
