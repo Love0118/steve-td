@@ -128,6 +128,7 @@ final class GambleSlotsTest {
         merged.validateForRuntime();
         assertEquals(200, merged.towers().get(GambleTowers.POKER_TABLE.id()).maxHealth());
         assertEquals(50, merged.towers().get(GambleTowers.POKER_TABLE.id()).mineralCost());
+        assertEquals(50, merged.towers().get(GambleTowers.POKER_TABLE.id()).aggroPriority());
         assertEquals(170.0 / 3.0, merged.ability(GambleTowers.POKER_TABLE.id(), "healthScoreDivisor", -1));
         assertEquals(50000, merged.ability(GambleTowers.POKER_TABLE.id(), "specialScoreThreshold", -1));
         assertEquals(160, merged.ability(GambleTowers.POKER_TABLE.id(), "debuffDurationTicks", -1));

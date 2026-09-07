@@ -120,14 +120,14 @@ public final class GambleTowers {
     );
 
     public static final TowerType POKER_TABLE = TowerType.builder("gamble_poker_table", "포커 테이블")
-            .mineralCost(50).maxHealth(200).range(0).damage(0).attackIntervalTicks(20)
+            .mineralCost(50).maxHealth(200).range(0).damage(0).attackIntervalTicks(20).aggroPriority(50)
             .visual(EntityVisual.builder("minecraft:slime")
                     .blockbenchModel("semion-td:prop/blackjack_table").scale(0.5).build())
             .description(List.of(
                     "공격하지 않는 앞라인 타워입니다. 200~1000 다이아를 베팅해 한 번만 강화할 수 있습니다.",
                     "52장 중 3장을 뽑습니다. 8 하이 이하는 파괴, 9~J 하이는 대실패, Q~A 하이·원페어는 일반 강화입니다.",
                     "최대 체력 증가 = 베팅액 × 패 점수 / {ability.healthScoreDivisor:number}.",
-                    "패 점수: 9/10/J 하이 2/4/6, Q/K/A 하이 15/20/25, 원페어 30~42, 플러시 50, 스트레이트 55, 트리플·스트레이트 플러시 60.",
+                    "패 점수: 9/10/J 하이 2/4/6, Q/K/A 하이 27/31/35, 원페어 37~49, 플러시 50, 스트레이트 55, 트리플·스트레이트 플러시 60.",
                     "사망 시 반경 {ability.deathRadius:blocks} 내 적에게 최대 체력의 {ability.deathDamageRatio:percent}만큼 마법 피해를 줍니다. 베팅 강화 후에는 {ability.upgradedDeathDamageRatio:percent}로 증가합니다.",
                     "베팅액 × 패 점수가 {ability.specialScoreThreshold:integer} 이상인 플러시/스트레이트/트리플 이상은 사망 디버프를 1/2/3개 얻습니다.",
                     "공격력 → 공격 속도 → 방어력 순서로 각각 {ability.debuffReduction:percent} 감소, {ability.debuffDurationTicks:seconds} 지속.",

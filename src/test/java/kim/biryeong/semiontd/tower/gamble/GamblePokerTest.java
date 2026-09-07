@@ -30,7 +30,7 @@ final class GamblePokerTest {
                 GamblePoker.Kind.THREE_OF_A_KIND, 52, GamblePoker.Kind.STRAIGHT_FLUSH, 48), counts);
         assertEquals(1800, destroyed);
         assertEquals(4920, weak);
-        assertEquals(457064, totalScore);
+        assertEquals(588992, totalScore);
     }
 
     @Test
@@ -38,8 +38,8 @@ final class GamblePokerTest {
         assertEquals(GamblePoker.Kind.STRAIGHT, GamblePoker.evaluate(12, 13, 27).kind()); // A,2,3
         assertEquals(GamblePoker.Kind.STRAIGHT, GamblePoker.evaluate(10, 24, 38).kind()); // Q,K,A
         assertEquals(GamblePoker.Kind.HIGH_CARD, GamblePoker.evaluate(11, 25, 26).kind()); // K,A,2
-        assertEquals(30, GamblePoker.evaluate(0, 13, 28).score());
-        assertEquals(42, GamblePoker.evaluate(12, 25, 28).score());
+        assertEquals(37, GamblePoker.evaluate(0, 13, 28).score());
+        assertEquals(49, GamblePoker.evaluate(12, 25, 28).score());
         assertThrows(IllegalArgumentException.class, () -> GamblePoker.evaluate(0, 0, 1));
         assertThrows(IllegalArgumentException.class, () -> GamblePoker.evaluate(-1, 0, 1));
         assertThrows(IllegalArgumentException.class, () -> GamblePoker.evaluate(0, 1, 52));
@@ -63,6 +63,23 @@ final class GamblePokerTest {
         assertFalse(GamblePoker.validBet(199));
         assertFalse(GamblePoker.validBet(1001));
         assertThrows(IllegalArgumentException.class, () -> triple.weightedScore(Long.MAX_VALUE));
+    }
+
+    @Test
+    void normalHighCardsSeparateFromWeakResultsAndPairsStayBelowFlush() {
+        assertEquals(6, GamblePoker.evaluate(9, 13, 28).score());
+        int[] highScores = {27, 31, 35};
+        for (int index = 0; index < highScores.length; index++) {
+            var high = GamblePoker.evaluate(10 + index, 13, 28);
+            assertEquals(highScores[index], high.score());
+            assertFalse(high.weak());
+        }
+        for (int rank = 0; rank < 13; rank++) {
+            var pair = GamblePoker.evaluate(rank, rank + 13, 26 + (rank + 1) % 13);
+            assertEquals(37 + rank, pair.score());
+            assertTrue(pair.score() > highScores[2] && pair.score() < 50);
+        }
+        assertTrue(180 + 1000 * highScores[0] * 3.0 / 170 >= 650);
     }
 
     @Test

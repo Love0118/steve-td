@@ -55,16 +55,16 @@ public final class GamblePoker {
             score = 50;
         } else if (ranks[0] == ranks[1] || ranks[1] == ranks[2]) {
             kind = Kind.PAIR;
-            score = 30 + ranks[1] - 2;
+            score = 37 + ranks[1] - 2;
         } else {
             kind = Kind.HIGH_CARD;
             score = switch (ranks[2]) {
                 case 9 -> 2;
                 case 10 -> 4;
                 case 11 -> 6;
-                case 12 -> 15;
-                case 13 -> 20;
-                case 14 -> 25;
+                case 12 -> 27;
+                case 13 -> 31;
+                case 14 -> 35;
                 default -> 0;
             };
         }

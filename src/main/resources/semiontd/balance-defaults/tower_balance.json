@@ -3350,7 +3350,7 @@
       "range": 0.0,
       "damage": 0.0,
       "attackIntervalTicks": 20,
-      "aggroPriority": 0
+      "aggroPriority": 50
     },
     "developer_alpha": {
       "mineralCost": 35,
