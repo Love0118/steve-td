@@ -47,17 +47,18 @@ public final class GambleRevealService {
     }
 
     public static Component render(GambleReveal reveal, GambleReveal.Frame frame) {
-        return render(reveal, frame, reveal.caption());
+        return render(reveal, frame, reveal.caption(), true);
     }
 
     public static Component resultMessage(GambleReveal reveal) {
         return Component.literal("\n")
-                .append(render(reveal, reveal.frameAt(reveal.revealTick()), reveal.result()))
+                .append(render(reveal, reveal.frameAt(reveal.revealTick()), reveal.result(), false))
                 .append("\n");
     }
 
-    private static Component render(GambleReveal reveal, GambleReveal.Frame frame, String finalText) {
-        MutableComponent text = Component.empty().append(Component.literal(reveal.label() + "  ").withStyle(ChatFormatting.GOLD));
+    private static Component render(GambleReveal reveal, GambleReveal.Frame frame, String finalText, boolean showLabel) {
+        MutableComponent text = Component.empty();
+        if (showLabel) text.append(Component.literal(reveal.label() + "  ").withStyle(ChatFormatting.GOLD));
         for (int glyph : frame.glyphs()) {
             text.append(switch (reveal.kind()) {
                 case CARDS -> GambleGlyphs.card(glyph);

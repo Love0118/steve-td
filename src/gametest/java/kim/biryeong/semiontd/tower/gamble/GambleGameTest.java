@@ -180,13 +180,14 @@ public final class GambleGameTest {
                     == TowerUpgradeResult.SUCCESS, "A gambler reveal must not block another poker table.");
             var replacement = new GambleReveal(GambleReveal.Kind.SLOTS, List.of(1, 2, 3), "new slots", "done", "result", true);
             for (var result : List.of(replacement,
-                    new GambleReveal(GambleReveal.Kind.CARDS, List.of(0, 14, 28), "cards", "caption", "card result", true),
-                    new GambleReveal(GambleReveal.Kind.DICE, List.of(2, 6), "dice", "caption", "dice result", true))) {
+                    new GambleReveal(GambleReveal.Kind.CARDS, List.of(0, 14, 28), "cards title", "caption", "card result", true),
+                    new GambleReveal(GambleReveal.Kind.DICE, List.of(2, 6), "dice title", "caption", "dice result", true))) {
                 var message = kim.biryeong.semiontd.ui.GambleRevealService.resultMessage(result);
                 String plain = message.getString();
                 require(plain.startsWith("\n") && plain.endsWith("\n") && plain.chars().filter(c -> c == '\n').count() == 2,
                         "Chat results must have one blank line above and below the result line.");
                 require(plain.contains(result.result()) && !plain.contains("…"), "Chat must contain the full settled result.");
+                require(!plain.contains(result.label()), "Chat must omit the repeated bet title.");
                 for (int outcome : result.outcomes()) {
                     var glyph = switch (result.kind()) {
                         case CARDS -> kim.biryeong.semiontd.ui.rp.GambleGlyphs.card(outcome);

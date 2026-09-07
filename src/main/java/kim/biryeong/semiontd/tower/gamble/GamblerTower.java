@@ -345,12 +345,14 @@ public final class GamblerTower extends ProductionTower {
         GambleState before = state();
         double healthRatio = health() / Math.max(1.0, currentMaxHealth());
         GambleState after;
+        String rewardSummary;
         if (GambleRewards.awardsAbility(before, score, source.getRandom().nextDouble())) {
             GambleAbility ability = GambleRewards.chooseMissing(
                     before, source.getRandom().nextInt(GambleRewards.missingAbilities(before).size())
             );
             after = before.recordAbility(
                     ability, score, bet.displayName() + " " + roll + " → " + ability.detailLine());
+            rewardSummary = ability.displayName() + " 획득";
         } else {
             List<GambleStat> stats = rewardCount == 2
                     ? GambleRewards.chooseDistinctStats(
@@ -368,6 +370,7 @@ public final class GamblerTower extends ProductionTower {
             }
             String result = bet.displayName() + " " + roll + " → " + String.join(", ", results);
             after = before.recordStats(changes, score, result);
+            rewardSummary = String.join(", ", results);
         }
         setData(STATE, after);
         syncMaxHealth(effectBaseMaxHealth(), false);
@@ -378,7 +381,7 @@ public final class GamblerTower extends ProductionTower {
                 bet == GambleBet.SLOTS ? GambleReveal.Kind.SLOTS : GambleReveal.Kind.DICE,
                 revealOutcomes, bet.displayName(),
                 (bet == GambleBet.SLOTS ? (rewardCount == 2 ? "잭팟!" : "강화") : roll) + " · " + signed(score) + "점",
-                after.lastResult(), score > 0.0));
+                rewardSummary, score > 0.0));
     }
 
     private static List<String> slotTooltipLines() {
