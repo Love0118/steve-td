@@ -51,7 +51,7 @@ public final class GambleRevealService {
     }
 
     public static Component resultMessage(GambleReveal reveal) {
-        return Component.literal("\n")
+        return Component.literal("\n\n")
                 .append(render(reveal, reveal.frameAt(reveal.revealTick()), reveal.result(), false))
                 .append("\n");
     }

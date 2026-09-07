@@ -115,17 +115,15 @@ public final class PokerTableTower extends ProductionTower {
         }
         setData(RESULT, new BetResult(bet, hand,
                 GamblePoker.drawDebuffs(hand, bet, value("specialScoreThreshold"), nextInt)));
-        String result = hand.cardsLabel() + " · " + hand.displayName();
         if (hand.destroyed()) {
-            reveal(lane, hand, result + " — 포커 테이블이 파괴됐습니다.");
+            reveal(lane, hand);
             // A lost bet permanently removes the tower; it is not a round combat death.
             lane.removeTower(this);
             return;
         }
         syncMaxHealth(effectBaseMaxHealth(), true);
         onStateChanged(lane);
-        reveal(lane, hand, (hand.weak() ? "타워가 븅신같이 강화됐습니다 · " : result + " · ")
-                + "최대 체력 " + oneDecimal(currentMaxHealth()) + " · " + debuffSummary());
+        reveal(lane, hand);
     }
 
     public int debuffCount() {
@@ -190,8 +188,10 @@ public final class PokerTableTower extends ProductionTower {
         return TowerBalanceRuntime.ability(type().id(), key);
     }
 
-    private void reveal(PlayerLane lane, GamblePoker.Hand hand, String text) {
+    private void reveal(PlayerLane lane, GamblePoker.Hand hand) {
         var player = lane.arenaWorld().getServer().getPlayerList().getPlayer(ownerPlayer());
+        String text = hand.destroyed() ? "파괴" : "체력 +" + oneDecimal(currentMaxHealth() - type().maxHealth())
+                + (debuffCount() > 0 ? " · 디버프 " + debuffCount() + "개" : "");
         GambleRevealService.start(player, new GambleReveal(GambleReveal.Kind.CARDS, hand.cards(),
                 "포커 테이블", hand.displayName() + (hand.destroyed() ? " · 파괴!"
                         : " · 체력 " + oneDecimal(currentMaxHealth()) + " · 디버프 " + debuffCount() + "개"),

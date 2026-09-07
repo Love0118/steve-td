@@ -106,6 +106,19 @@ public final class GambleGameTest {
                     double radians = Math.toRadians(source.yBodyRot);
                     require(new Vec3(-Math.sin(radians), 0, Math.cos(radians)).dot(direction) > 0.999,
                             "Every gambler and slot tier must face its actual wave spawn.");
+                    if (GambleTowers.isSpectator(type)) {
+                        var holder = (de.tomalbrc.bil.core.holder.entity.living.LivingEntityHolder<?>) source.getHolder();
+                        require(holder.getAnimator().isPlaying("idle"), "Static slots need idle poses to update display yaw.");
+                        var animator = (de.tomalbrc.bil.core.component.AnimationComponent) holder.getAnimator();
+                        animator.tickAnimations();
+                        for (var bone : holder.getBones()) {
+                            var pose = animator.findPose(null, bone);
+                            require(pose != null, "Every visible slot bone must participate in the idle pose update.");
+                            holder.updateElement(null, bone, pose.pose());
+                            require(close(bone.element().getYaw(), source.yBodyRot),
+                                    "The displayed slot bone must receive the wave-facing yaw, not just its parent entity.");
+                        }
+                    }
                     source.setYRot(47);
                     source.setYHeadRot(47);
                     source.yBodyRot = 47;
@@ -184,8 +197,8 @@ public final class GambleGameTest {
                     new GambleReveal(GambleReveal.Kind.DICE, List.of(2, 6), "dice title", "caption", "dice result", true))) {
                 var message = kim.biryeong.semiontd.ui.GambleRevealService.resultMessage(result);
                 String plain = message.getString();
-                require(plain.startsWith("\n") && plain.endsWith("\n") && plain.chars().filter(c -> c == '\n').count() == 2,
-                        "Chat results must have one blank line above and below the result line.");
+                require(plain.startsWith("\n\n") && plain.endsWith("\n") && plain.chars().filter(c -> c == '\n').count() == 3,
+                        "Chat glyphs must occupy the third line, with a blank line below.");
                 require(plain.contains(result.result()) && !plain.contains("…"), "Chat must contain the full settled result.");
                 require(!plain.contains(result.label()), "Chat must omit the repeated bet title.");
                 for (int outcome : result.outcomes()) {

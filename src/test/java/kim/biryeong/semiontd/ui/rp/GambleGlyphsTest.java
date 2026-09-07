@@ -17,6 +17,12 @@ class GambleGlyphsTest {
         for (var element : GambleGlyphs.fontDefinition().getAsJsonArray("providers")) {
             var provider = element.getAsJsonObject();
             String file = provider.get("file").getAsString();
+            if (file.endsWith("/slots.png")) {
+                assertEquals(24, provider.get("height").getAsInt());
+                assertEquals(24, provider.get("ascent").getAsInt());
+            }
+            assertEquals(provider.get("height").getAsInt(), provider.get("ascent").getAsInt(),
+                    "Result glyph bottoms must align with the text baseline.");
             String name = file.substring(file.lastIndexOf('/') + 1, file.length() - 4);
             BufferedImage atlas = GambleGlyphs.atlas(name);
             var rows = provider.getAsJsonArray("chars");
