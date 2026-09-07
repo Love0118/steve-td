@@ -31,6 +31,27 @@ final class GambleSlotsTest {
     }
 
     @Test
+    void bundledGambleDefaultsMatchCodeForEveryTowerUpgradeAndAbility() {
+        var bundled = TowerBalanceConfig.defaultConfig();
+        var code = TowerBalanceConfig.codeDefaults();
+        code.towers().forEach((id, stats) -> {
+            if (id.startsWith("gamble_")) {
+                assertEquals(stats, bundled.towers().get(id), id);
+            }
+        });
+        code.upgradeCosts().forEach((id, cost) -> {
+            if (id.startsWith("gamble_")) {
+                assertEquals(cost, bundled.upgradeCosts().get(id), id);
+            }
+        });
+        code.abilities().forEach((id, abilities) -> {
+            if (id.startsWith("gamble_")) {
+                assertEquals(abilities, bundled.abilities().get(id), id);
+            }
+        });
+    }
+
+    @Test
     void all216OutcomesHaveLowerExpectedEfficiencyAndPreserveJackpotCeilings() {
         int different = 0;
         int pairs = 0;

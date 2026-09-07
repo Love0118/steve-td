@@ -632,8 +632,8 @@ public final class GambleGameTest {
                     "A fixed max-health upgrade must preserve the exact 50% health ratio.");
             require(close(replacement.adjustAttackRange(6.5), 7.0),
                     "The range result must add the rolled amount to the base range.");
-            require(close(replacement.modifyAttackDamage(null, null, 10.0), 45.0),
-                    "The damage result must add the rolled amount to the base damage.");
+            require(close(replacement.modifyAttackDamage(null, null, replacement.type().damage()), 45.0),
+                    "The damage result must combine 5 physical, 35 physical growth, and 5 magic damage.");
             require(close(replacement.splashRadius(), 2.5),
                     "The basic splash radius must remain fixed despite legacy rolled state.");
 
