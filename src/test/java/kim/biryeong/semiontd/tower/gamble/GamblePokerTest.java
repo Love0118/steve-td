@@ -50,19 +50,40 @@ final class GamblePokerTest {
         var flush = GamblePoker.evaluate(0, 3, 7);
         var straight = GamblePoker.evaluate(0, 14, 28);
         var triple = GamblePoker.evaluate(0, 13, 26);
-        assertEquals(0, flush.debuffCount(999, 50000));
-        assertEquals(1, flush.debuffCount(1000, 50000));
-        assertEquals(0, straight.debuffCount(909, 50000));
-        assertEquals(2, straight.debuffCount(910, 50000));
-        assertEquals(0, triple.debuffCount(833, 50000));
-        assertEquals(3, triple.debuffCount(834, 50000));
-        assertEquals(0, GamblePoker.evaluate(12, 25, 28).debuffCount(1000, 50000));
+        assertFalse(flush.qualifiesForDebuffs(999, 50000));
+        assertTrue(flush.qualifiesForDebuffs(1000, 50000));
+        assertFalse(straight.qualifiesForDebuffs(909, 50000));
+        assertTrue(straight.qualifiesForDebuffs(910, 50000));
+        assertFalse(triple.qualifiesForDebuffs(833, 50000));
+        assertTrue(triple.qualifiesForDebuffs(834, 50000));
+        assertFalse(GamblePoker.evaluate(12, 25, 28).qualifiesForDebuffs(1000, 50000));
         assertEquals(60000, triple.weightedScore(1000));
         assertTrue(GamblePoker.validBet(200));
         assertTrue(GamblePoker.validBet(1000));
         assertFalse(GamblePoker.validBet(199));
         assertFalse(GamblePoker.validBet(1001));
         assertThrows(IllegalArgumentException.class, () -> triple.weightedScore(Long.MAX_VALUE));
+    }
+
+    @Test
+    void qualifyingHandsCanReceiveEveryDistinctRandomDebuffSubset() {
+        var subsets = new java.util.HashSet<java.util.List<GamblePoker.DeathDebuff>>();
+        for (int count = 0; count < 3; count++) {
+            for (int first = 0; first < 3; first++) {
+                for (int second = 0; second < 2; second++) {
+                    int[] draws = {count, first, second, 0};
+                    int[] index = {0};
+                    var result = GamblePoker.drawDebuffs(GamblePoker.evaluate(0, 3, 7), 1000, 50000,
+                            bound -> draws[index[0]++]);
+                    assertEquals(count + 1, result.size());
+                    assertEquals(result.size(), result.stream().distinct().count());
+                    subsets.add(result);
+                }
+            }
+        }
+        assertEquals(7, subsets.size());
+        assertEquals(java.util.List.of(), GamblePoker.drawDebuffs(GamblePoker.evaluate(0, 3, 7), 999, 50000,
+                bound -> { throw new AssertionError("Ineligible bets must not roll debuffs"); }));
     }
 
     @Test

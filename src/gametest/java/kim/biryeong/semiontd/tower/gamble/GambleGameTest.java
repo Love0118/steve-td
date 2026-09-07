@@ -48,6 +48,76 @@ import xyz.nucleoid.map_templates.BlockBounds;
 
 public final class GambleGameTest {
     @GameTest(maxTicks = 80)
+    public void pokerStoresItsRandomDebuffsAndOnlyAppliesThoseShownInDetails(GameTestHelper context) {
+        ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
+        UUID owner = stableUuid("poker-random-debuffs");
+        PlayerLane lane = testLane(context, owner);
+        TeamLaneGroup group = new TeamLaneGroup(TeamId.RED, BossMonster.defaultBoss(TeamId.RED));
+        group.addLane(lane);
+        prepareFloor(context);
+        SemionMonsterEntity target = null;
+        try {
+            PokerTableTower table = poker(owner, floor(context, 5, 2, 5));
+            lane.addTower(table);
+            int[] draws = {0, 2}; // One debuff, choosing armor rather than the old fixed attack-damage debuff.
+            int[] index = {0};
+            table.resolveHand(lane, 1000, GamblePoker.evaluate(0, 3, 7), bound -> draws[index[0]++]);
+            require(table.deathDebuffs().equals(List.of(GamblePoker.DeathDebuff.ARMOR)), "The chosen subset must be saved.");
+            table.resetForRound(lane);
+            table.refreshType(TowerBalanceRuntime.resolve(GambleTowers.POKER_TABLE), lane);
+            PokerTableTower copied = poker(owner, table.position());
+            copied.copyFrom(table, 0);
+            lane.replaceTower(table, copied);
+            require(copied.deathDebuffs().equals(table.deathDebuffs()), "Reset, reload and copying cannot reroll debuffs.");
+            String details = copied.runtimeDetailLines().stream().filter(line -> line.startsWith("사망 디버프")).findFirst().orElseThrow();
+            require(details.contains("방어력") && !details.contains("공격"), "Details must list only the selected debuffs.");
+            SemionTowerEntity source = entity(lane, copied);
+            target = spawnTarget(context, lane, source.position().add(1, 0, 0), "random-debuff-target", 2000);
+            lane.killTower(copied);
+            require(close(target.activeTimedEffectMagnitude(TimedEffectType.MONSTER_ARMOR_REDUCTION), 0.2), "Selected armor debuff applies.");
+            require(close(target.activeTimedEffectMagnitude(TimedEffectType.MONSTER_ATTACK_DAMAGE_REDUCTION), 0)
+                            && close(target.activeTimedEffectMagnitude(TimedEffectType.MONSTER_ATTACK_SPEED_REDUCTION), 0),
+                    "Unselected debuffs must not apply.");
+            context.succeed();
+        } finally {
+            if (target != null) target.discard();
+            group.closeRuntime();
+        }
+    }
+
+    @GameTest(maxTicks = 80)
+    public void gambleRevealOwnsTheActionbarAndReleasesItsPlayerLock(GameTestHelper context) {
+        var player = context.makeMockServerPlayerInLevel();
+        var reveal = new GambleReveal(GambleReveal.Kind.DICE, List.of(6, 6), "주사위", "더블", "더블", true);
+        try {
+            kim.biryeong.semiontd.ui.GambleRevealService.start(player, reveal);
+            require(kim.biryeong.semiontd.ui.GambleRevealService.isRolling(player.getUUID()), "A reveal owns the player's betting slot.");
+            var expected = kim.biryeong.semiontd.ui.GambleRevealService.actionbar(player.getUUID());
+            require(expected.equals(kim.biryeong.semiontd.ui.SemionHudTextService.actionbarTextFor(player.getUUID(), null)),
+                    "The sidebar HUD must show the reveal instead of overwriting it.");
+            require(expected.equals(kim.biryeong.semiontd.ui.SemionDisplayHudService.actionbarTextFor(player.getUUID(), null)),
+                    "The display HUD must also preserve the reveal.");
+            for (int i = 0; i < reveal.durationTicks(); i++) {
+                kim.biryeong.semiontd.ui.GambleRevealService.tick(context.getLevel().getServer());
+                if (i == 0) require(kim.biryeong.semiontd.ui.GambleRevealService.isRolling(player.getUUID()),
+                        "An online player's animation must remain active until its result is revealed.");
+                if (i == reveal.revealTick() - 1) {
+                    require(!kim.biryeong.semiontd.ui.GambleRevealService.isRolling(player.getUUID())
+                                    && kim.biryeong.semiontd.ui.GambleRevealService.actionbar(player.getUUID()).isPresent(),
+                            "Revealed results release the betting lock while retaining the final display.");
+                }
+            }
+            require(!kim.biryeong.semiontd.ui.GambleRevealService.isRolling(player.getUUID())
+                            && kim.biryeong.semiontd.ui.GambleRevealService.actionbar(player.getUUID()).isEmpty(),
+                    "Finished reveals must release both the lock and actionbar.");
+            context.succeed();
+        } finally {
+            kim.biryeong.semiontd.ui.GambleRevealService.clear(player.getUUID());
+            player.discard();
+        }
+    }
+
+    @GameTest(maxTicks = 80)
     public void pokerHealthTargetsAreForOneThousandDiamondsAndScaleWithSmallerBets(GameTestHelper context) {
         ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
         UUID owner = stableUuid("poker-thousand-diamond-budget");
@@ -57,19 +127,19 @@ public final class GambleGameTest {
         prepareFloor(context);
         int[][] cards = {{10, 13, 28}, {11, 13, 28}, {12, 13, 28}, {0, 13, 28}, {12, 25, 28},
                 {0, 3, 7}, {0, 14, 28}, {0, 13, 26}, {0, 1, 2}};
-        double[] health = {676.470588, 747.058824, 817.647059, 852.941176, 1064.705882,
-                1082.352941, 1170.588235, 1258.823529, 1258.823529};
-        int[] debuffs = {0, 0, 0, 0, 0, 1, 2, 3, 3};
+        double[] health = {656.470588, 727.058824, 797.647059, 832.941176, 1044.705882,
+                1062.352941, 1150.588235, 1238.823529, 1238.823529};
         try {
             for (int index = 0; index < cards.length; index++) {
                 for (int bet : List.of(200, 1000)) {
                     PokerTableTower table = poker(owner, floor(context, 4, 2, 3));
                     lane.addTower(table);
                     table.resolveHand(lane, bet, GamblePoker.evaluate(cards[index][0], cards[index][1], cards[index][2]));
-                    double expectedHealth = 200 + (health[index] - 200) * bet / 1000.0;
+                    double expectedHealth = 180 + (health[index] - 180) * bet / 1000.0;
                     require(Math.abs(table.currentMaxHealth() - expectedHealth) < 0.001,
                             "Poker health must match the thousand-diamond budget for hand " + index + " at bet " + bet);
-                    require(table.debuffCount() == (bet == 1000 ? debuffs[index] : 0),
+                    require(bet == 1000 && index >= 5 ? table.debuffCount() >= 1 && table.debuffCount() <= 3
+                                    : table.debuffCount() == 0,
                             "Small bets must not unlock the high-hand death debuffs.");
                     lane.removeTower(table);
                 }
@@ -212,7 +282,7 @@ public final class GambleGameTest {
             target = spawnTarget(context, lane, entity(lane, base).position().add(1, 0, 0), "poker-base-target");
             require(close(base.deathDamageRatio(), 0.05), "An unupgraded table must use five percent.");
             lane.killTower(base);
-            require(close(target.runtimeMonster().health(), 90), "A base 200-health table must explode for ten damage.");
+            require(close(target.runtimeMonster().health(), 91), "A base 180-health table must explode for nine damage.");
             target.discard();
             target = null;
             lane.removeTower(base);
@@ -252,12 +322,12 @@ public final class GambleGameTest {
             PokerTableTower weak = poker(owner, floor(context, 4, 2, 3));
             lane.addTower(weak);
             weak.resolveHand(lane, 200, GamblePoker.evaluate(0, 16, 35));
-            require(close(weak.currentMaxHealth(), 200 + 1200.0 * 3 / 170) && weak.debuffCount() == 0,
+            require(close(weak.currentMaxHealth(), 180 + 1200.0 * 3 / 170) && weak.debuffCount() == 0,
                     "J high must keep base health and grant only the weak six-point reward.");
             PokerTableTower flush = poker(owner, floor(context, 5, 2, 3));
             lane.addTower(flush);
             flush.resolveHand(lane, 200, GamblePoker.evaluate(0, 3, 7));
-            require(close(flush.currentMaxHealth(), 200 + 10000.0 * 3 / 170) && flush.debuffCount() == 0,
+            require(close(flush.currentMaxHealth(), 180 + 10000.0 * 3 / 170) && flush.debuffCount() == 0,
                     "A small flush bet must grant health without a special ability.");
             for (var type : List.of(GambleTowers.SPECTATOR_T1, GambleTowers.SPECTATOR_T2, GambleTowers.SPECTATOR_T3)) {
                 GambleSupportTower slots = support(type, owner, floor(context, 7, 2, 3));
@@ -380,8 +450,8 @@ public final class GambleGameTest {
         prepareFloor(context);
         PokerTableTower table = poker(owner, floor(context, 5, 2, 5));
         lane.addTower(table);
-        table.resolveHand(lane, 1000, GamblePoker.evaluate(0, 13, 26));
-        require(close(table.currentMaxHealth(), 200 + 60000.0 * 3 / 170), "Health must use the accepted score conversion.");
+        table.resolveHand(lane, 1000, GamblePoker.evaluate(0, 13, 26), bound -> bound - 1);
+        require(close(table.currentMaxHealth(), 180 + 60000.0 * 3 / 170), "Health must use the accepted score conversion.");
         double maxHealth = table.currentMaxHealth();
         table.resetForRound(lane);
         table.refreshType(TowerBalanceRuntime.resolve(GambleTowers.POKER_TABLE), lane);

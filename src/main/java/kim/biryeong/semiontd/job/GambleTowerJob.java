@@ -63,6 +63,7 @@ public final class GambleTowerJob extends SemionJob {
     }
 
     private static void clear(JobContext context) {
+        kim.biryeong.semiontd.ui.GambleRevealService.clear(context.player().uuid());
         context.game().playerLane(context.player().uuid())
                 .ifPresent(lane -> GambleRoundEffects.clearAll(lane, context.player().uuid()));
     }

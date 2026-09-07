@@ -126,7 +126,7 @@ final class GambleSlotsTest {
                 TowerBalanceConfig.upgradeKey(GambleTowers.GAMBLER.id(), GambleBet.ODD.upgradeId()), 90L), Map.of());
         var merged = partial.withMissingDefaults(defaults);
         merged.validateForRuntime();
-        assertEquals(200, merged.towers().get(GambleTowers.POKER_TABLE.id()).maxHealth());
+        assertEquals(180, merged.towers().get(GambleTowers.POKER_TABLE.id()).maxHealth());
         assertEquals(50, merged.towers().get(GambleTowers.POKER_TABLE.id()).mineralCost());
         assertEquals(50, merged.towers().get(GambleTowers.POKER_TABLE.id()).aggroPriority());
         assertEquals(170.0 / 3.0, merged.ability(GambleTowers.POKER_TABLE.id(), "healthScoreDivisor", -1));

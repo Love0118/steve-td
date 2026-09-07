@@ -1,8 +1,10 @@
 package kim.biryeong.semiontd.tower.gamble;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntUnaryOperator;
+import kim.biryeong.semiontd.effect.TimedEffectType;
 
 /** Three cards from a standard deck, without replacement. Card IDs are suit * 13 + rank - 2. */
 public final class GamblePoker {
@@ -72,16 +74,47 @@ public final class GamblePoker {
     }
 
     public enum Kind {
-        HIGH_CARD("하이 카드", 0), PAIR("원페어", 0), FLUSH("플러시", 1),
-        STRAIGHT("스트레이트", 2), THREE_OF_A_KIND("트리플", 3), STRAIGHT_FLUSH("스트레이트 플러시", 3);
+        HIGH_CARD("하이 카드", false), PAIR("원페어", false), FLUSH("플러시", true),
+        STRAIGHT("스트레이트", true), THREE_OF_A_KIND("트리플", true), STRAIGHT_FLUSH("스트레이트 플러시", true);
 
         private final String displayName;
-        private final int debuffs;
+        private final boolean special;
 
-        Kind(String displayName, int debuffs) {
+        Kind(String displayName, boolean special) {
             this.displayName = displayName;
-            this.debuffs = debuffs;
+            this.special = special;
         }
+    }
+
+    public enum DeathDebuff {
+        ATTACK_DAMAGE("공격력", TimedEffectType.MONSTER_ATTACK_DAMAGE_REDUCTION),
+        ATTACK_SPEED("공격 속도", TimedEffectType.MONSTER_ATTACK_SPEED_REDUCTION),
+        ARMOR("방어력", TimedEffectType.MONSTER_ARMOR_REDUCTION);
+
+        private final String displayName;
+        private final TimedEffectType effect;
+
+        DeathDebuff(String displayName, TimedEffectType effect) {
+            this.displayName = displayName;
+            this.effect = effect;
+        }
+
+        public String displayName() { return displayName; }
+        public TimedEffectType effect() { return effect; }
+    }
+
+    /** Uniform count, then a sample without replacement. The caller saves the result once per bet. */
+    public static List<DeathDebuff> drawDebuffs(Hand hand, long bet, double threshold, IntUnaryOperator nextInt) {
+        if (!hand.qualifiesForDebuffs(bet, threshold)) {
+            return List.of();
+        }
+        int count = 1 + nextInt.applyAsInt(3);
+        List<DeathDebuff> available = new ArrayList<>(List.of(DeathDebuff.values()));
+        List<DeathDebuff> selected = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            selected.add(available.remove(nextInt.applyAsInt(available.size())));
+        }
+        return selected.stream().sorted().toList();
     }
 
     public record Hand(List<Integer> cards, Kind kind, int score) {
@@ -104,8 +137,8 @@ public final class GamblePoker {
             return bet * score;
         }
 
-        public int debuffCount(long bet, double threshold) {
-            return weightedScore(bet) >= threshold ? kind.debuffs : 0;
+        public boolean qualifiesForDebuffs(long bet, double threshold) {
+            return kind.special && weightedScore(bet) >= threshold;
         }
 
         public String displayName() {

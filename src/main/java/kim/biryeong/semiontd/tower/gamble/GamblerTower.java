@@ -26,6 +26,7 @@ import kim.biryeong.semiontd.tower.TowerType;
 import kim.biryeong.semiontd.tower.TowerUpgradeOption;
 import kim.biryeong.semiontd.tower.area.AreaEffectIds;
 import kim.biryeong.semiontd.ui.SemionText;
+import kim.biryeong.semiontd.ui.GambleRevealService;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -210,7 +211,8 @@ public final class GamblerTower extends ProductionTower {
     @Override
     public boolean meetsUpgradeRequirements(PlayerLane lane, TowerUpgradeOption option) {
         return GambleBet.fromUpgradeId(option.id())
-                .map(bet -> !state().atScoreCap() && hasRequiredSupport(lane, bet)).orElse(true);
+                .map(bet -> !state().atScoreCap() && !GambleRevealService.isRolling(ownerPlayer())
+                        && hasRequiredSupport(lane, bet)).orElse(true);
     }
 
     private boolean hasRequiredSupport(PlayerLane lane, GambleBet bet) {
@@ -318,18 +320,20 @@ public final class GamblerTower extends ProductionTower {
         double score;
         int rewardCount;
         String roll;
+        List<Integer> revealOutcomes;
         if (bet == GambleBet.SLOTS) {
             GambleSlots.Symbol[] symbols = GambleSlots.Symbol.values();
+            revealOutcomes = List.of(source.getRandom().nextInt(symbols.length),
+                    source.getRandom().nextInt(symbols.length), source.getRandom().nextInt(symbols.length));
             GambleSlots.Result result = GambleSlots.resolve(
-                    symbols[source.getRandom().nextInt(symbols.length)],
-                    symbols[source.getRandom().nextInt(symbols.length)],
-                    symbols[source.getRandom().nextInt(symbols.length)]);
+                    symbols[revealOutcomes.get(0)], symbols[revealOutcomes.get(1)], symbols[revealOutcomes.get(2)]);
             score = result.score();
             rewardCount = result.statRewardCount();
             roll = result.display();
         } else {
             int first = source.getRandom().nextInt(6) + 1;
             int second = bet == GambleBet.TWO_DICE ? source.getRandom().nextInt(6) + 1 : 0;
+            revealOutcomes = second == 0 ? List.of(first) : List.of(first, second);
             score = bet == GambleBet.TWO_DICE ? GambleRolls.twoDiceDelta(first, second)
                     : GambleRolls.oddEvenDelta(bet, first);
             rewardCount = bet == GambleBet.TWO_DICE ? GambleRolls.twoDiceStatRewardCount(first, second) : 1;
@@ -366,7 +370,12 @@ public final class GamblerTower extends ProductionTower {
         syncMaxHealth(effectBaseMaxHealth(), false);
         syncHealth(currentMaxHealth() * healthRatio);
         onStateChanged(lane);
-        showBetResult(source, after.lastResult(), score > 0.0);
+        var player = source.getServer().getPlayerList().getPlayer(ownerPlayer());
+        GambleRevealService.start(player, new GambleReveal(
+                bet == GambleBet.SLOTS ? GambleReveal.Kind.SLOTS : GambleReveal.Kind.DICE,
+                revealOutcomes, bet.displayName(),
+                (bet == GambleBet.SLOTS ? (rewardCount == 2 ? "잭팟!" : "강화") : roll) + " · " + signed(score) + "점",
+                after.lastResult(), score > 0.0));
     }
 
     private static List<String> slotTooltipLines() {
@@ -477,19 +486,6 @@ public final class GamblerTower extends ProductionTower {
             return result.killed() ? AreaEffectOutcome.KILLED
                     : result.dealtDamage() > 0.0 ? AreaEffectOutcome.APPLIED : AreaEffectOutcome.UNCHANGED;
         });
-    }
-
-    private void showBetResult(SemionTowerEntity source, String result, boolean success) {
-        if (source.level() instanceof net.minecraft.server.level.ServerLevel level) {
-            level.sendParticles(success ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.WITCH,
-                    source.getX(), source.getY() + 1.0, source.getZ(), 14, 0.35, 0.35, 0.35, 0.04);
-        }
-        if (source.getServer() != null) {
-            var player = source.getServer().getPlayerList().getPlayer(ownerPlayer());
-            if (player != null) {
-                player.sendSystemMessage(SemionText.prefixedPlain("도박 결과: " + result));
-            }
-        }
     }
 
     private void syncEquipmentVisual() {

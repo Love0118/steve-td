@@ -2,13 +2,13 @@ package kim.biryeong.semiontd.tower.gamble;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.IntUnaryOperator;
 import kim.biryeong.semiontd.api.SemionTdApi;
 import kim.biryeong.semiontd.api.area.AreaEffectOutcome;
 import kim.biryeong.semiontd.api.area.AreaVfxSpec;
 import kim.biryeong.semiontd.api.area.AreaVfxStyles;
 import kim.biryeong.semiontd.api.area.MonsterAreaEffectRequest;
 import kim.biryeong.semiontd.config.TowerBalanceRuntime;
-import kim.biryeong.semiontd.effect.TimedEffectType;
 import kim.biryeong.semiontd.entity.monster.DamageType;
 import kim.biryeong.semiontd.entity.tower.SemionTowerEntity;
 import kim.biryeong.semiontd.game.GridPosition;
@@ -20,7 +20,7 @@ import kim.biryeong.semiontd.tower.TowerType;
 import kim.biryeong.semiontd.tower.TowerUpgradeOption;
 import kim.biryeong.semiontd.tower.area.AreaEffectIds;
 import kim.biryeong.semiontd.tower.area.TowerAreaDamage;
-import kim.biryeong.semiontd.ui.SemionText;
+import kim.biryeong.semiontd.ui.GambleRevealService;
 import net.minecraft.resources.ResourceLocation;
 
 public final class PokerTableTower extends ProductionTower {
@@ -89,7 +89,8 @@ public final class PokerTableTower extends ProductionTower {
 
     @Override
     public boolean meetsUpgradeRequirements(PlayerLane lane, TowerUpgradeOption option) {
-        return GamblePoker.UPGRADE_ID.equals(option.id()) && !hasBet() && health() > 0;
+        return GamblePoker.UPGRADE_ID.equals(option.id()) && !hasBet() && health() > 0
+                && !GambleRevealService.isRolling(ownerPlayer());
     }
 
     @Override
@@ -106,29 +107,40 @@ public final class PokerTableTower extends ProductionTower {
     }
 
     void resolveHand(PlayerLane lane, long bet, GamblePoker.Hand hand) {
+        resolveHand(lane, bet, hand, lane.arenaWorld().random::nextInt);
+    }
+
+    void resolveHand(PlayerLane lane, long bet, GamblePoker.Hand hand, IntUnaryOperator nextInt) {
         if (hasBet() || !GamblePoker.validBet(bet)) {
             throw new IllegalStateException("A poker table can place one valid bet.");
         }
-        setData(RESULT, new BetResult(bet, hand));
+        setData(RESULT, new BetResult(bet, hand,
+                GamblePoker.drawDebuffs(hand, bet, value("specialScoreThreshold"), nextInt)));
         String result = hand.cardsLabel() + " · " + hand.displayName();
         if (hand.destroyed()) {
-            message(lane, result + " — 포커 테이블이 파괴됐습니다.");
+            reveal(lane, hand, result + " — 포커 테이블이 파괴됐습니다.");
             // A lost bet permanently removes the tower; it is not a round combat death.
             lane.removeTower(this);
             return;
         }
         syncMaxHealth(effectBaseMaxHealth(), true);
         onStateChanged(lane);
-        message(lane, result + " · 점수 " + hand.weightedScore(bet) + " · 최대 체력 "
-                + oneDecimal(currentMaxHealth()) + " · 사망 디버프 " + debuffCount() + "개");
-        if (hand.weak()) {
-            message(lane, "타워가 븅신같이 강화됐습니다");
-        }
+        reveal(lane, hand, (hand.weak() ? "타워가 븅신같이 강화됐습니다 · " : result + " · ")
+                + "최대 체력 " + oneDecimal(currentMaxHealth()) + " · " + debuffSummary());
     }
 
     public int debuffCount() {
-        return getData(RESULT).map(result -> result.hand().debuffCount(
-                result.bet(), value("specialScoreThreshold"))).orElse(0);
+        return deathDebuffs().size();
+    }
+
+    public List<GamblePoker.DeathDebuff> deathDebuffs() {
+        return getData(RESULT).map(BetResult::debuffs).orElse(List.of());
+    }
+
+    private String debuffSummary() {
+        return deathDebuffs().isEmpty() ? "사망 디버프 없음"
+                : "사망 디버프 " + debuffCount() + "개: " + deathDebuffs().stream()
+                .map(GamblePoker.DeathDebuff::displayName).collect(java.util.stream.Collectors.joining(" · "));
     }
 
     public double deathDamageRatio() {
@@ -145,20 +157,14 @@ public final class PokerTableTower extends ProductionTower {
                 AreaEffectIds.tower(this, "poker_death"), source, value("deathRadius"),
                 AreaVfxSpec.onTrigger(AreaVfxStyles.SPLASH));
         // Apply strongest-only debuffs before the explosion. Multiple tables refresh duration.
-        int count = debuffCount();
-        if (count > 0) {
+        List<GamblePoker.DeathDebuff> debuffs = deathDebuffs();
+        if (!debuffs.isEmpty()) {
             int ticks = TowerBalanceRuntime.abilityInt(type().id(), "debuffDurationTicks");
             double reduction = value("debuffReduction");
             MonsterAreaEffectRequest debuffRequest = MonsterAreaEffectRequest.aroundTower(
                     request.effectId(), source, request.radius(), AreaVfxSpec.none());
             SemionTdApi.areaEffects().applyToMonsters(debuffRequest, target -> {
-                target.applyTimedEffect(TimedEffectType.MONSTER_ATTACK_DAMAGE_REDUCTION, reduction, ticks);
-                if (count >= 2) {
-                    target.applyTimedEffect(TimedEffectType.MONSTER_ATTACK_SPEED_REDUCTION, reduction, ticks);
-                }
-                if (count >= 3) {
-                    target.applyTimedEffect(TimedEffectType.MONSTER_ARMOR_REDUCTION, reduction, ticks);
-                }
+                for (GamblePoker.DeathDebuff debuff : debuffs) target.applyTimedEffect(debuff.effect(), reduction, ticks);
                 return AreaEffectOutcome.APPLIED;
             });
         }
@@ -176,7 +182,7 @@ public final class PokerTableTower extends ProductionTower {
                 result.hand().cardsLabel() + " · " + result.hand().displayName(),
                 "패 점수 " + result.hand().score() + " × 베팅 " + result.bet()
                         + " = " + result.hand().weightedScore(result.bet()),
-                "사망 디버프 " + debuffCount() + "개: 공격력 → 공격 속도 → 방어력",
+                debuffSummary(),
                 deathDamage
         )).orElseGet(() -> List.of("아직 베팅하지 않았습니다. 200~1000 다이아로 한 번만 강화할 수 있습니다.", deathDamage));
     }
@@ -185,13 +191,15 @@ public final class PokerTableTower extends ProductionTower {
         return TowerBalanceRuntime.ability(type().id(), key);
     }
 
-    private void message(PlayerLane lane, String text) {
+    private void reveal(PlayerLane lane, GamblePoker.Hand hand, String text) {
         var player = lane.arenaWorld().getServer().getPlayerList().getPlayer(ownerPlayer());
-        if (player != null) {
-            player.sendSystemMessage(SemionText.prefixedPlain(text));
-        }
+        GambleRevealService.start(player, new GambleReveal(GambleReveal.Kind.CARDS, hand.cards(),
+                "포커 테이블", hand.displayName() + (hand.destroyed() ? " · 파괴!"
+                        : " · 체력 " + oneDecimal(currentMaxHealth()) + " · 디버프 " + debuffCount() + "개"),
+                text, !hand.destroyed() && !hand.weak()));
     }
 
-    private record BetResult(long bet, GamblePoker.Hand hand) {
+    private record BetResult(long bet, GamblePoker.Hand hand, List<GamblePoker.DeathDebuff> debuffs) {
+        private BetResult { debuffs = List.copyOf(debuffs); }
     }
 }
