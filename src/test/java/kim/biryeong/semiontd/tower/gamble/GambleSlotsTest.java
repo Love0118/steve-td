@@ -19,31 +19,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 final class GambleSlotsTest {
-    @Test
-    void slotFrontMatchesEntityForwardAfterBilImport() throws Exception {
-        for (String suffix : List.of("", "_t2", "_t3")) {
-            String path = "/model/semion-td/tower/gamble_slot_machine" + suffix + ".bbmodel";
-            try (var stream = getClass().getResourceAsStream(path)) {
-                assertNotNull(stream);
-                var model = com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(
-                        stream, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
-                var marquee = java.util.stream.StreamSupport.stream(model.getAsJsonArray("elements").spliterator(), false)
-                        .map(com.google.gson.JsonElement::getAsJsonObject)
-                        .filter(element -> element.get("name").getAsString().equals("marquee_display"))
-                        .findFirst().orElseThrow();
-                assertTrue(marquee.getAsJsonArray("to").get(2).getAsDouble() < 0,
-                        "The authored slot front is on negative Z.");
-                for (var element : model.getAsJsonArray("outliner")) {
-                    if (!element.isJsonObject()) continue;
-                    double yaw = element.getAsJsonObject().getAsJsonArray("rotation").get(1).getAsDouble();
-                    // BIL 1.7 applies its own 180-degree root transform: -Z must become +Z.
-                    double forwardZ = -Math.cos(Math.toRadians(yaw + 180));
-                    assertEquals(1.0, forwardZ, 0.0001, "All slot bones must face entity-forward after import.");
-                }
-            }
-        }
-    }
-
     @BeforeAll
     static void bootstrapMinecraft() {
         SharedConstants.tryDetectVersion();

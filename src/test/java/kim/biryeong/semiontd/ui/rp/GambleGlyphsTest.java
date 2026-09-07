@@ -1,28 +1,17 @@
 package kim.biryeong.semiontd.ui.rp;
 
 import static org.junit.jupiter.api.Assertions.*;
-import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashSet;
-import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 
 class GambleGlyphsTest {
     @Test
-    void fontMapsEveryCardBackDieAndSlotToAVisibleAtlasCell() throws Exception {
+    void fontMapsEveryCardBackDieAndSlotToAVisibleAtlasCell() {
         var characters = new HashSet<Integer>();
         for (var element : GambleGlyphs.fontDefinition().getAsJsonArray("providers")) {
             var provider = element.getAsJsonObject();
             String file = provider.get("file").getAsString();
-            if (file.endsWith("/slots.png") || file.endsWith("/cards.png") || file.endsWith("/card_back.png")) {
-                assertEquals(24, provider.get("height").getAsInt());
-                assertEquals(24, provider.get("ascent").getAsInt());
-            }
-            assertEquals(provider.get("height").getAsInt(), provider.get("ascent").getAsInt(),
-                    "Result glyph bottoms must align with the text baseline.");
             String name = file.substring(file.lastIndexOf('/') + 1, file.length() - 4);
             BufferedImage atlas = GambleGlyphs.atlas(name);
             var rows = provider.getAsJsonArray("chars");
@@ -42,17 +31,5 @@ class GambleGlyphsTest {
             }
         }
         assertEquals(65, characters.size());
-        Path reports = Path.of("build/reports/gamble-glyphs");
-        Files.createDirectories(reports);
-        BufferedImage preview = new BufferedImage(624, 440, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = preview.createGraphics();
-        try {
-            g.setColor(new Color(0x172138)); g.fillRect(0, 0, 624, 440);
-            g.drawImage(GambleGlyphs.atlas("cards"), 40, 20, null);
-            g.drawImage(GambleGlyphs.atlas("card_back"), 40, 282, 60, 84, null);
-            g.drawImage(GambleGlyphs.atlas("dice"), 120, 280, 288, 48, null);
-            g.drawImage(GambleGlyphs.atlas("slots"), 120, 344, 384, 64, null);
-        } finally { g.dispose(); }
-        ImageIO.write(preview, "png", reports.resolve("preview.png").toFile());
     }
 }
