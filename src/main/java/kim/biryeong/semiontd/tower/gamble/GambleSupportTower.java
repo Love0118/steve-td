@@ -82,6 +82,11 @@ public final class GambleSupportTower extends ProductionTower {
     }
 
     @Override
+    protected void configureEntityAfterSpawn(SemionTowerEntity entity, PlayerLane lane) {
+        if (GambleTowers.isSpectator(type())) GambleFacing.towardWave(entity, lane);
+    }
+
+    @Override
     public void resetForRound(PlayerLane lane) {
         waveActive = false;
         linkedTargetPositions.clear();
@@ -95,6 +100,9 @@ public final class GambleSupportTower extends ProductionTower {
     @Override
     public void tick(PlayerLane lane) {
         super.tick(lane);
+        if (GambleTowers.isSpectator(type())) {
+            runtimeEntity(lane).ifPresent(entity -> GambleFacing.towardWave(entity, lane));
+        }
         GambleRollLabels.sync(lane, ownerPlayer(), this);
         if (isDestroyed(lane)) {
             return;

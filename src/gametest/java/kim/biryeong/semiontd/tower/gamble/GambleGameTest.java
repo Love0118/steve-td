@@ -86,6 +86,40 @@ public final class GambleGameTest {
     }
 
     @GameTest(maxTicks = 80)
+    public void gamblersAndSlotsFaceTheWaveSpawnAfterPlacementAndIdleTicks(GameTestHelper context) {
+        ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
+        UUID owner = stableUuid("gamble-wave-facing");
+        PlayerLane lane = testLane(context, owner);
+        prepareFloor(context);
+        try {
+            for (var type : List.of(GambleTowers.GAMBLER, GambleTowers.KING, GambleTowers.DARK_KING,
+                    GambleTowers.SPECTATOR_T1, GambleTowers.SPECTATOR_T2, GambleTowers.SPECTATOR_T3)) {
+                GridPosition position = floor(context, 5, 2, 5);
+                var resolved = TowerBalanceRuntime.resolve(type);
+                kim.biryeong.semiontd.tower.EntityBackedTower tower = GambleTowers.isSpectator(type)
+                        ? support(type, owner, position)
+                        : new GamblerTower(resolved, owner, TeamId.RED, 1, position, position);
+                lane.addTower(tower);
+                var source = entity(lane, tower);
+                var direction = lane.laneLayout().spawn().subtract(source.position()).multiply(1, 0, 1).normalize();
+                for (int step = 0; step < 2; step++) {
+                    double radians = Math.toRadians(source.yBodyRot);
+                    require(new Vec3(-Math.sin(radians), 0, Math.cos(radians)).dot(direction) > 0.999,
+                            "Every gambler and slot tier must face its actual wave spawn.");
+                    source.setYRot(47);
+                    source.setYHeadRot(47);
+                    source.yBodyRot = 47;
+                    tower.tick(lane);
+                }
+                lane.removeTower(tower);
+            }
+            context.succeed();
+        } finally {
+            lane.clearTowers();
+        }
+    }
+
+    @GameTest(maxTicks = 80)
     public void gambleRevealOwnsTheActionbarUntilItsResultExpires(GameTestHelper context) {
         var player = context.makeMockServerPlayerInLevel();
         var reveal = new GambleReveal(GambleReveal.Kind.DICE, List.of(6, 6), "주사위", "더블", "더블", true);

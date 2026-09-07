@@ -75,6 +75,7 @@ public final class GamblerTower extends ProductionTower {
 
     @Override
     protected void configureEntityAfterSpawn(SemionTowerEntity entity, PlayerLane lane) {
+        GambleFacing.towardWave(entity, lane);
         entity.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(heldItem()));
         entity.setCustomName(Component.literal(type().displayName()));
         entity.setCustomNameVisible(true);
@@ -97,6 +98,8 @@ public final class GamblerTower extends ProductionTower {
     public void tick(PlayerLane lane) {
         this.lane = lane;
         super.tick(lane);
+        runtimeEntity(lane).filter(entity -> entity.currentAttackTarget() == null)
+                .ifPresent(entity -> GambleFacing.towardWave(entity, lane));
         syncEquipmentVisual();
     }
 
