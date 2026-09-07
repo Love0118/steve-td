@@ -211,7 +211,7 @@ public final class GamblerTower extends ProductionTower {
     @Override
     public boolean meetsUpgradeRequirements(PlayerLane lane, TowerUpgradeOption option) {
         return GambleBet.fromUpgradeId(option.id())
-                .map(bet -> !state().atScoreCap() && !GambleRevealService.isRolling(ownerPlayer())
+                .map(bet -> !state().atScoreCap()
                         && hasRequiredSupport(lane, bet)).orElse(true);
     }
 

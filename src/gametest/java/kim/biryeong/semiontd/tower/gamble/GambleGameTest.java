@@ -86,12 +86,12 @@ public final class GambleGameTest {
     }
 
     @GameTest(maxTicks = 80)
-    public void gambleRevealOwnsTheActionbarAndReleasesItsPlayerLock(GameTestHelper context) {
+    public void gambleRevealOwnsTheActionbarUntilItsResultExpires(GameTestHelper context) {
         var player = context.makeMockServerPlayerInLevel();
         var reveal = new GambleReveal(GambleReveal.Kind.DICE, List.of(6, 6), "주사위", "더블", "더블", true);
         try {
             kim.biryeong.semiontd.ui.GambleRevealService.start(player, reveal);
-            require(kim.biryeong.semiontd.ui.GambleRevealService.isRolling(player.getUUID()), "A reveal owns the player's betting slot.");
+            require(kim.biryeong.semiontd.ui.GambleRevealService.isRolling(player.getUUID()), "A new reveal starts rolling.");
             var expected = kim.biryeong.semiontd.ui.GambleRevealService.actionbar(player.getUUID());
             require(expected.equals(kim.biryeong.semiontd.ui.SemionHudTextService.actionbarTextFor(player.getUUID(), null)),
                     "The sidebar HUD must show the reveal instead of overwriting it.");
@@ -104,15 +104,73 @@ public final class GambleGameTest {
                 if (i == reveal.revealTick() - 1) {
                     require(!kim.biryeong.semiontd.ui.GambleRevealService.isRolling(player.getUUID())
                                     && kim.biryeong.semiontd.ui.GambleRevealService.actionbar(player.getUUID()).isPresent(),
-                            "Revealed results release the betting lock while retaining the final display.");
+                            "Revealed results stop rolling while retaining the final display.");
                 }
             }
             require(!kim.biryeong.semiontd.ui.GambleRevealService.isRolling(player.getUUID())
                             && kim.biryeong.semiontd.ui.GambleRevealService.actionbar(player.getUUID()).isEmpty(),
-                    "Finished reveals must release both the lock and actionbar.");
+                    "Finished reveals must release the actionbar.");
             context.succeed();
         } finally {
             kim.biryeong.semiontd.ui.GambleRevealService.clear(player.getUUID());
+            player.discard();
+        }
+    }
+
+    @GameTest(maxTicks = 80)
+    public void repeatedBetsReplaceTheRevealWithoutBlockingUpgrades(GameTestHelper context) {
+        ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
+        var player = context.makeMockServerPlayerInLevel();
+        UUID owner = player.getUUID();
+        SemionGame game = startedGambleGame(context, owner, "rapid-bets");
+        try {
+            PlayerLane lane = game.playerLane(owner).orElseThrow();
+            GridPosition position = emptyPosition(lane);
+            lane.addTower(gambler(owner, position));
+            var economy = game.players().get(owner).economy();
+            economy.addMineral(2000);
+            long before = economy.diamond();
+            for (int i = 0; i < 3; i++) {
+                require(ProductionTowerService.upgradeTower(game, owner, position, GambleBet.ODD.upgradeId())
+                        == TowerUpgradeResult.SUCCESS, "Successive bets must succeed without advancing the reveal clock.");
+                require(kim.biryeong.semiontd.ui.GambleRevealService.isRolling(owner), "Each bet must start a reveal.");
+            }
+            GamblerTower upgraded = (GamblerTower) lane.towerAt(position);
+            require(upgraded.state().totalBets() == 3 && economy.diamond() == before - 3 * 85,
+                    "Each accepted bet must be recorded and charged exactly once.");
+            require(ProductionTowerService.upgradeTower(game, owner, position, GambleBet.SLOTS.upgradeId())
+                    == TowerUpgradeResult.UPGRADE_REQUIREMENTS_NOT_MET, "Animation skipping must not bypass support requirements.");
+            PokerTableTower table = poker(owner, emptyPosition(lane));
+            lane.addTower(table);
+            require(ProductionTowerService.betPoker(game, owner, table.originalPosition(), table.betToken(), 200)
+                    == TowerUpgradeResult.SUCCESS, "A gambler reveal must not block another poker table.");
+            var replacement = new GambleReveal(GambleReveal.Kind.SLOTS, List.of(1, 2, 3), "new slots", "done", "result", true);
+            for (var result : List.of(replacement,
+                    new GambleReveal(GambleReveal.Kind.CARDS, List.of(0, 14, 28), "cards", "caption", "card result", true),
+                    new GambleReveal(GambleReveal.Kind.DICE, List.of(2, 6), "dice", "caption", "dice result", true))) {
+                var message = kim.biryeong.semiontd.ui.GambleRevealService.resultMessage(result);
+                String plain = message.getString();
+                require(plain.startsWith("\n") && plain.endsWith("\n") && plain.chars().filter(c -> c == '\n').count() == 2,
+                        "Chat results must have one blank line above and below the result line.");
+                require(plain.contains(result.result()) && !plain.contains("…"), "Chat must contain the full settled result.");
+                for (int outcome : result.outcomes()) {
+                    var glyph = switch (result.kind()) {
+                        case CARDS -> kim.biryeong.semiontd.ui.rp.GambleGlyphs.card(outcome);
+                        case DICE -> kim.biryeong.semiontd.ui.rp.GambleGlyphs.die(outcome);
+                        case SLOTS -> kim.biryeong.semiontd.ui.rp.GambleGlyphs.slot(outcome);
+                    };
+                    require(message.getSiblings().get(0).getSiblings().contains(glyph),
+                            "Chat must preserve the settled glyph and its resource-pack font style.");
+                }
+            }
+            kim.biryeong.semiontd.ui.GambleRevealService.start(player, replacement);
+            require(kim.biryeong.semiontd.ui.GambleRevealService.actionbar(owner).orElseThrow()
+                    .equals(kim.biryeong.semiontd.ui.GambleRevealService.render(replacement, replacement.frameAt(0))),
+                    "The latest bet must replace the actionbar immediately rather than queue behind earlier bets.");
+            context.succeed();
+        } finally {
+            kim.biryeong.semiontd.ui.GambleRevealService.clear(owner);
+            game.close();
             player.discard();
         }
     }

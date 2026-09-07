@@ -89,8 +89,7 @@ public final class PokerTableTower extends ProductionTower {
 
     @Override
     public boolean meetsUpgradeRequirements(PlayerLane lane, TowerUpgradeOption option) {
-        return GamblePoker.UPGRADE_ID.equals(option.id()) && !hasBet() && health() > 0
-                && !GambleRevealService.isRolling(ownerPlayer());
+        return GamblePoker.UPGRADE_ID.equals(option.id()) && !hasBet() && health() > 0;
     }
 
     @Override

@@ -25,6 +25,11 @@ public final class GambleRevealService {
 
     public static void start(ServerPlayer player, GambleReveal reveal) {
         if (player == null) return;
+        ActiveReveal previous = ACTIVE.get(player.getUUID());
+        // A new bet skips the old presentation, never its already-earned result.
+        if (previous != null && previous.age < previous.reveal.revealTick()) {
+            player.sendSystemMessage(resultMessage(previous.reveal));
+        }
         player.connection.send(ClientboundClearDialogPacket.INSTANCE);
         ActiveReveal active = new ActiveReveal(reveal, player.level().dimension());
         ACTIVE.put(player.getUUID(), active);
@@ -42,6 +47,16 @@ public final class GambleRevealService {
     }
 
     public static Component render(GambleReveal reveal, GambleReveal.Frame frame) {
+        return render(reveal, frame, reveal.caption());
+    }
+
+    public static Component resultMessage(GambleReveal reveal) {
+        return Component.literal("\n")
+                .append(render(reveal, reveal.frameAt(reveal.revealTick()), reveal.result()))
+                .append("\n");
+    }
+
+    private static Component render(GambleReveal reveal, GambleReveal.Frame frame, String finalText) {
         MutableComponent text = Component.empty().append(Component.literal(reveal.label() + "  ").withStyle(ChatFormatting.GOLD));
         for (int glyph : frame.glyphs()) {
             text.append(switch (reveal.kind()) {
@@ -50,7 +65,7 @@ public final class GambleRevealService {
                 case SLOTS -> GambleGlyphs.slot(glyph);
             }).append(Component.literal(" "));
         }
-        text.append(Component.literal(frame.revealed() ? "  " + reveal.caption() : "  …")
+        text.append(Component.literal(frame.revealed() ? "  " + finalText : "  …")
                 .withStyle(frame.revealed() ? (reveal.positive() ? ChatFormatting.GREEN : ChatFormatting.RED) : ChatFormatting.GRAY));
         return text;
     }
@@ -84,7 +99,7 @@ public final class GambleRevealService {
             }
             if (active.age == active.reveal.revealTick()) {
                 sound(player, active.reveal.positive() ? SoundEvents.NOTE_BLOCK_CHIME.value() : SoundEvents.NOTE_BLOCK_BASS.value(), 0.6F, 1.2F);
-                player.sendSystemMessage(SemionText.prefixedPlain(active.reveal.result()));
+                player.sendSystemMessage(resultMessage(active.reveal));
             }
         }
     }
