@@ -168,6 +168,19 @@ final class GambleTowerTest {
         }
         assertTrue(cappedTower.runtimeDetailLines().stream()
                 .anyMatch(line -> line.contains("도박 상태: 종료")));
+        // The final slot bet keeps its full reward while the score reaches its cap.
+
+        GambleState before = GambleState.EMPTY.recordAbility(GambleAbility.LOSS_INSURANCE, 499, "near cap");
+        var result = GambleSlots.resolve(GambleSlots.Symbol.DIAMOND,
+                GambleSlots.Symbol.DIAMOND, GambleSlots.Symbol.DIAMOND);
+        GambleState after = before.recordStats(List.of(
+                new GambleState.StatChange(GambleStat.DAMAGE, GambleBalance.statDelta(GambleStat.DAMAGE, 150), 5),
+                new GambleState.StatChange(GambleStat.MAGIC_DAMAGE, GambleBalance.statDelta(GambleStat.MAGIC_DAMAGE, 150), 5)
+        ), result.score(), result.display());
+        assertEquals(500, after.cumulativeScore());
+        assertEquals(75, after.damageDelta());
+        assertEquals(75, after.magicDamageDelta());
+        assertTrue(after.atScoreCap());
     }
 
     @Test
@@ -458,12 +471,23 @@ final class GambleTowerTest {
     @Test
     void defaultsMergeMissingGambleValuesAndRejectInvalidOnes() throws Exception {
         TowerBalanceConfig defaults = TowerBalanceConfig.defaultConfig();
+        assertInvalidAbility(defaults, GambleBalance.GLOBAL_ID, "slotTripleDiamond", 301);
+        assertInvalidAbility(defaults, GambleTowers.POKER_TABLE.id(), "healthScoreDivisor", 0);
+        var code = TowerBalanceConfig.codeDefaults();
+        GambleTowers.all().forEach(type -> {
+            assertEquals(code.towers().get(type.id()), defaults.towers().get(type.id()));
+            assertEquals(code.abilities().get(type.id()), defaults.abilities().get(type.id()));
+        });
         GambleTowers.all().forEach(type -> assertTrue(defaults.towers().containsKey(type.id())));
         assertEquals(85, defaults.upgradeCost(GambleTowers.GAMBLER.id(), GambleBet.ODD.upgradeId(), -1));
         assertEquals(170, defaults.upgradeCost(
                 GambleTowers.GAMBLER.id(), GambleBet.TWO_DICE.upgradeId(), -1));
         TowerBalanceConfig partial = new TowerBalanceConfig(Map.of(), Map.of(), Map.of(
                 GambleBalance.GLOBAL_ID, Map.of("damagePerScore", 0.2))).withMissingDefaults(defaults);
+        assertEquals(defaults.ability(GambleBalance.GLOBAL_ID, "slotTripleDiamond", -1),
+                partial.ability(GambleBalance.GLOBAL_ID, "slotTripleDiamond", -1));
+        assertEquals(defaults.ability(GambleTowers.POKER_TABLE.id(), "healthScoreDivisor", -1),
+                partial.ability(GambleTowers.POKER_TABLE.id(), "healthScoreDivisor", -1));
         assertEquals(0.2, partial.ability(GambleBalance.GLOBAL_ID, "damagePerScore", -1), EPSILON);
         assertEquals(5.0, partial.ability(GambleBalance.GLOBAL_ID, "maxHealthPerScore", -1), EPSILON);
         assertEquals(3.0, partial.ability(GambleBalance.GLOBAL_ID, "maxSpectatorsPerGambler", -1), EPSILON);

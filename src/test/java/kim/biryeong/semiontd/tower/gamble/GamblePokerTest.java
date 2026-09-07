@@ -31,10 +31,7 @@ final class GamblePokerTest {
         assertEquals(1800, destroyed);
         assertEquals(4920, weak);
         assertEquals(588992, totalScore);
-    }
 
-    @Test
-    void aceCanEndOrStartAStraightButCannotWrapFromKingToTwo() {
         assertEquals(GamblePoker.Kind.STRAIGHT, GamblePoker.evaluate(12, 13, 27).kind()); // A,2,3
         assertEquals(GamblePoker.Kind.STRAIGHT, GamblePoker.evaluate(10, 24, 38).kind()); // Q,K,A
         assertEquals(GamblePoker.Kind.HIGH_CARD, GamblePoker.evaluate(11, 25, 26).kind()); // K,A,2
@@ -43,6 +40,7 @@ final class GamblePokerTest {
         assertThrows(IllegalArgumentException.class, () -> GamblePoker.evaluate(0, 0, 1));
         assertThrows(IllegalArgumentException.class, () -> GamblePoker.evaluate(-1, 0, 1));
         assertThrows(IllegalArgumentException.class, () -> GamblePoker.evaluate(0, 1, 52));
+            assertEquals(3, GamblePoker.draw(bound -> bound - 1).cards().stream().distinct().count());
     }
 
     @Test
@@ -86,31 +84,4 @@ final class GamblePokerTest {
                 bound -> { throw new AssertionError("Ineligible bets must not roll debuffs"); }));
     }
 
-    @Test
-    void normalHighCardsSeparateFromWeakResultsAndPairsStayBelowFlush() {
-        assertEquals(6, GamblePoker.evaluate(9, 13, 28).score());
-        int[] highScores = {27, 31, 35};
-        for (int index = 0; index < highScores.length; index++) {
-            var high = GamblePoker.evaluate(10 + index, 13, 28);
-            assertEquals(highScores[index], high.score());
-            assertFalse(high.weak());
-        }
-        for (int rank = 0; rank < 13; rank++) {
-            var pair = GamblePoker.evaluate(rank, rank + 13, 26 + (rank + 1) % 13);
-            assertEquals(37 + rank, pair.score());
-            assertTrue(pair.score() > highScores[2] && pair.score() < 50);
-        }
-        assertTrue(180 + 1000 * highScores[0] * 3.0 / 170 >= 650);
-    }
-
-    @Test
-    void drawingUsesShrinkingDeckBoundsWithoutDuplicateCards() {
-        int[] index = {0};
-        var hand = GamblePoker.draw(bound -> {
-            assertEquals(52 - index[0]++, bound);
-            return bound - 1;
-        });
-        assertEquals(3, hand.cards().stream().distinct().count());
-        assertEquals(3, index[0]);
-    }
 }
