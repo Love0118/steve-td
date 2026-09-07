@@ -64,8 +64,8 @@ public final class GambleGlyphs {
         JsonArray providers = new JsonArray();
         String[] cards = new String[4];
         for (int suit = 0; suit < 4; suit++) cards[suit] = characters(CARD + suit * 13, 13);
-        providers.add(bitmap("cards", 28, 28, cards));
-        providers.add(bitmap("card_back", 28, 28, characters(BACK, 1)));
+        providers.add(bitmap("cards", 24, 24, cards));
+        providers.add(bitmap("card_back", 24, 24, characters(BACK, 1)));
         providers.add(bitmap("dice", 24, 24, characters(DIE, 6)));
         providers.add(bitmap("slots", 24, 24, characters(SLOT, 6)));
         JsonObject font = new JsonObject();

@@ -17,7 +17,7 @@ class GambleGlyphsTest {
         for (var element : GambleGlyphs.fontDefinition().getAsJsonArray("providers")) {
             var provider = element.getAsJsonObject();
             String file = provider.get("file").getAsString();
-            if (file.endsWith("/slots.png")) {
+            if (file.endsWith("/slots.png") || file.endsWith("/cards.png") || file.endsWith("/card_back.png")) {
                 assertEquals(24, provider.get("height").getAsInt());
                 assertEquals(24, provider.get("ascent").getAsInt());
             }

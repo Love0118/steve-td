@@ -191,10 +191,9 @@ public final class PokerTableTower extends ProductionTower {
     private void reveal(PlayerLane lane, GamblePoker.Hand hand) {
         var player = lane.arenaWorld().getServer().getPlayerList().getPlayer(ownerPlayer());
         String text = hand.destroyed() ? "파괴" : "체력 +" + oneDecimal(currentMaxHealth() - type().maxHealth())
-                + (debuffCount() > 0 ? " · 디버프 " + debuffCount() + "개" : "");
+                + (debuffCount() > 0 ? " + 디버프 " + debuffCount() + "개" : "");
         GambleRevealService.start(player, new GambleReveal(GambleReveal.Kind.CARDS, hand.cards(),
-                "포커 테이블", hand.displayName() + (hand.destroyed() ? " · 파괴!"
-                        : " · 체력 " + oneDecimal(currentMaxHealth()) + " · 디버프 " + debuffCount() + "개"),
+                "포커 테이블", text,
                 text, !hand.destroyed() && !hand.weak()));
     }
 
