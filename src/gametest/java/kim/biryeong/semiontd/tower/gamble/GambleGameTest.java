@@ -48,6 +48,73 @@ import xyz.nucleoid.map_templates.BlockBounds;
 
 public final class GambleGameTest {
     @GameTest(maxTicks = 80)
+    public void pokerHealthTargetsAreForOneThousandDiamondsAndScaleWithSmallerBets(GameTestHelper context) {
+        ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
+        UUID owner = stableUuid("poker-thousand-diamond-budget");
+        PlayerLane lane = testLane(context, owner);
+        TeamLaneGroup group = new TeamLaneGroup(TeamId.RED, BossMonster.defaultBoss(TeamId.RED));
+        group.addLane(lane);
+        prepareFloor(context);
+        int[][] cards = {{10, 13, 28}, {11, 13, 28}, {12, 13, 28}, {0, 13, 28}, {12, 25, 28},
+                {0, 3, 7}, {0, 14, 28}, {0, 13, 26}, {0, 1, 2}};
+        double[] health = {464.705882, 552.941176, 641.176471, 729.411765, 941.176471,
+                1082.352941, 1170.588235, 1258.823529, 1258.823529};
+        int[] debuffs = {0, 0, 0, 0, 0, 1, 2, 3, 3};
+        try {
+            for (int index = 0; index < cards.length; index++) {
+                for (int bet : List.of(200, 1000)) {
+                    PokerTableTower table = poker(owner, floor(context, 4, 2, 3));
+                    lane.addTower(table);
+                    table.resolveHand(lane, bet, GamblePoker.evaluate(cards[index][0], cards[index][1], cards[index][2]));
+                    double expectedHealth = 200 + (health[index] - 200) * bet / 1000.0;
+                    require(Math.abs(table.currentMaxHealth() - expectedHealth) < 0.001,
+                            "Poker health must match the thousand-diamond budget for hand " + index + " at bet " + bet);
+                    require(table.debuffCount() == (bet == 1000 ? debuffs[index] : 0),
+                            "Small bets must not unlock the high-hand death debuffs.");
+                    lane.removeTower(table);
+                }
+            }
+            context.succeed();
+        } finally {
+            group.closeRuntime();
+        }
+    }
+
+    @GameTest(maxTicks = 80)
+    public void displayedGamblerDamageComponentsMatchBuffedCombatDamage(GameTestHelper context) {
+        ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
+        UUID owner = stableUuid("gamble-damage-stats");
+        PlayerLane lane = testLane(context, owner);
+        TeamLaneGroup group = new TeamLaneGroup(TeamId.RED, BossMonster.defaultBoss(TeamId.RED));
+        group.addLane(lane);
+        prepareFloor(context);
+        SemionMonsterEntity target = null;
+        try {
+            GridPosition position = floor(context, 4, 2, 3);
+            GamblerTower king = new GamblerTower(TowerBalanceRuntime.resolve(GambleTowers.KING), owner,
+                    TeamId.RED, 1, position, position);
+            lane.addTower(king);
+            king.markWaveStarted(1);
+            SemionTowerEntity source = entity(lane, king);
+            source.setPersistentEffect(TimedEffectType.TOWER_DAMAGE_BONUS, supportTestSource("display-percent"), 0.2);
+            source.setPersistentEffect(TimedEffectType.TOWER_FLAT_DAMAGE_BONUS, supportTestSource("display-flat"), 6);
+            source.setPersistentEffect(TimedEffectType.TOWER_FINAL_DAMAGE_BONUS, supportTestSource("display-final"), 0.5);
+            GamblerTower.AttackDamage displayed = king.currentAttackDamage(source);
+            require(close(displayed.physical(), 45) && close(displayed.magic(), 36),
+                    "The two stat lines must apply flat, percentage and final bonuses to their own components.");
+            target = spawnTarget(context, lane, source.position().add(0, 0, 2), "displayed-damage-target");
+            source.damageTargetResult(target, source.attackDamageAmount(target));
+            require(close(king.roundPhysicalDamageDealt(), displayed.physical())
+                            && close(king.roundMagicDamageDealt(), displayed.magic()),
+                    "Displayed components must equal their actual typed combat damage.");
+            context.succeed();
+        } finally {
+            if (target != null) target.discard();
+            group.closeRuntime();
+        }
+    }
+
+    @GameTest(maxTicks = 80)
     public void bothGambleKingsSplitTheirBaseAttackEvenlyBetweenPhysicalAndMagic(GameTestHelper context) {
         ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
         UUID owner = stableUuid("gamble-king-mixed-damage");
@@ -185,12 +252,12 @@ public final class GambleGameTest {
             PokerTableTower weak = poker(owner, floor(context, 4, 2, 3));
             lane.addTower(weak);
             weak.resolveHand(lane, 200, GamblePoker.evaluate(0, 16, 35));
-            require(close(weak.currentMaxHealth(), 200 + 1200.0 / 17) && weak.debuffCount() == 0,
+            require(close(weak.currentMaxHealth(), 200 + 1200.0 * 3 / 170) && weak.debuffCount() == 0,
                     "J high must keep base health and grant only the weak six-point reward.");
             PokerTableTower flush = poker(owner, floor(context, 5, 2, 3));
             lane.addTower(flush);
             flush.resolveHand(lane, 200, GamblePoker.evaluate(0, 3, 7));
-            require(close(flush.currentMaxHealth(), 200 + 10000.0 / 17) && flush.debuffCount() == 0,
+            require(close(flush.currentMaxHealth(), 200 + 10000.0 * 3 / 170) && flush.debuffCount() == 0,
                     "A small flush bet must grant health without a special ability.");
             for (var type : List.of(GambleTowers.SPECTATOR_T1, GambleTowers.SPECTATOR_T2, GambleTowers.SPECTATOR_T3)) {
                 GambleSupportTower slots = support(type, owner, floor(context, 7, 2, 3));
@@ -313,8 +380,8 @@ public final class GambleGameTest {
         prepareFloor(context);
         PokerTableTower table = poker(owner, floor(context, 5, 2, 5));
         lane.addTower(table);
-        table.resolveHand(lane, 250, GamblePoker.evaluate(0, 13, 26));
-        require(close(table.currentMaxHealth(), 200 + 15000.0 / 17), "Health must use the accepted score conversion.");
+        table.resolveHand(lane, 1000, GamblePoker.evaluate(0, 13, 26));
+        require(close(table.currentMaxHealth(), 200 + 60000.0 * 3 / 170), "Health must use the accepted score conversion.");
         double maxHealth = table.currentMaxHealth();
         table.resetForRound(lane);
         table.refreshType(TowerBalanceRuntime.resolve(GambleTowers.POKER_TABLE), lane);

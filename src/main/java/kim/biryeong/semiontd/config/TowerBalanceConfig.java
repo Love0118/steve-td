@@ -4770,8 +4770,8 @@ public record TowerBalanceConfig(
 
     private static void putGambleAbilities(LinkedHashMap<String, Map<String, Double>> abilities) {
         putAbilities(abilities, GambleTowers.POKER_TABLE.id(), Map.of(
-                "healthScoreDivisor", 17.0,
-                "specialScoreThreshold", 15000.0,
+                "healthScoreDivisor", 170.0 / 3.0,
+                "specialScoreThreshold", 50000.0,
                 "deathRadius", 2.5,
                 "deathDamageRatio", 0.05,
                 "upgradedDeathDamageRatio", 0.1,

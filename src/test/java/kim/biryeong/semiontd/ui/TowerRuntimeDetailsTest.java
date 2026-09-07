@@ -22,6 +22,8 @@ import kim.biryeong.semiontd.tower.animal.AnimalTowers;
 import kim.biryeong.semiontd.tower.animal.PigTower;
 import kim.biryeong.semiontd.tower.ancientcity.AncientCityTower;
 import kim.biryeong.semiontd.tower.ancientcity.AncientCityTowers;
+import kim.biryeong.semiontd.tower.gamble.GamblerTower;
+import kim.biryeong.semiontd.tower.gamble.GambleTowers;
 import kim.biryeong.semiontd.tower.succubus.SuccubusTowers;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
@@ -143,6 +145,23 @@ class TowerRuntimeDetailsTest {
                         SemionDialogService.currentTowerPrimaryDamage(sculkCore, null)
                 )
         );
+    }
+
+    @Test
+    void gamblerDetailsAndTooltipsShowSeparatePhysicalAndMagicStats() {
+        for (TowerType type : List.of(GambleTowers.GAMBLER, GambleTowers.KING, GambleTowers.DARK_KING)) {
+            GamblerTower tower = new GamblerTower(type, OWNER, TeamId.RED, 1, POSITION, POSITION);
+            String expected = SemionDialogService.formatTowerTypeDamage(type, type.damage()) + "\n"
+                    + kim.biryeong.semiontd.tower.description.TowerDescriptionTemplate.formatMagicDamage(type.damage(), "");
+            assertEquals(expected, SemionDialogService.formatTowerTypePrimaryDamage(type));
+            assertEquals(expected, SemionDialogService.formatTowerDamageStats(tower, null, type.damage()));
+            assertEquals(type.damage(), SemionDialogService.currentTowerPrimaryDamage(tower, null), 0.0001);
+            tower.addPermanentFlatDamageBonus(10, null);
+            String grown = SemionDialogService.formatTowerDamageStats(tower, null, 0);
+            String[] lines = grown.split("\n");
+            assertTrue(lines[0].contains("🪓") && lines[0].contains("%"));
+            assertEquals(expected.split("\n")[1], lines[1], "Physical growth cannot inflate the magic stat.");
+        }
     }
 
     @Test

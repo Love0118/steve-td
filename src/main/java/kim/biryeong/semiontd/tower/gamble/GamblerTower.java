@@ -136,13 +136,28 @@ public final class GamblerTower extends ProductionTower {
         return Math.max(0.0, GambleBalance.baseMagicDamage(type()) * (1.0 + bonus) + state().magicDamageDelta());
     }
 
+    /** Target-independent damage shown in the stat panel, using the combat split and final modifiers. */
+    public AttackDamage currentAttackDamage(SemionTowerEntity source) {
+        double total = source == null
+                ? modifyAttackDamage(null, null, type().damage() + permanentFlatDamageBonus())
+                : resolveBasicAttackOutgoingDamage(source, null, source.attackDamageAmount(null));
+        return splitAttackDamage(total, magicAttackShare(source));
+    }
+
+    public record AttackDamage(double physical, double magic) {
+    }
+
+    private static AttackDamage splitAttackDamage(double total, double magicShare) {
+        return new AttackDamage(total * (1.0 - magicShare), total * magicShare);
+    }
+
     private double magicAttackShare(SemionTowerEntity source) {
         // Mirror the shared pre-target physical modifiers for the split. Target, trait,
         // and final modifiers are applied once to the combined attack before splitting.
         double physical = (type().damage() + permanentFlatDamageBonus())
-                * (1.0 + source.activeEffectMagnitude(TimedEffectType.TOWER_DAMAGE_BONUS))
-                + source.activeEffectMagnitude(TimedEffectType.TOWER_FLAT_DAMAGE_BONUS)
-                - source.activeEffectMagnitude(TimedEffectType.TOWER_FLAT_DAMAGE_REDUCTION)
+                * (1.0 + (source == null ? 0.0 : source.activeEffectMagnitude(TimedEffectType.TOWER_DAMAGE_BONUS)))
+                + (source == null ? 0.0 : source.activeEffectMagnitude(TimedEffectType.TOWER_FLAT_DAMAGE_BONUS))
+                - (source == null ? 0.0 : source.activeEffectMagnitude(TimedEffectType.TOWER_FLAT_DAMAGE_REDUCTION))
                 + state().damageDelta();
         double magic = magicAttackDamage(source);
         double total = Math.max(0.0, physical) + magic;
@@ -163,10 +178,11 @@ public final class GamblerTower extends ProductionTower {
     private DamageResult damageMixedTarget(
             SemionTowerEntity source, SemionMonsterEntity target, double resolvedDamage, double magicShare
     ) {
+        AttackDamage components = splitAttackDamage(resolvedDamage, magicShare);
         DamageResult physical = damageResolvedTargetResult(source, target,
-                resolvedDamage * (1.0 - magicShare), DamageType.PHYSICAL);
+                components.physical(), DamageType.PHYSICAL);
         DamageResult magic = physical.killed() ? DamageResult.NONE
-                : damageResolvedTargetResult(source, target, resolvedDamage * magicShare, DamageType.MAGIC);
+                : damageResolvedTargetResult(source, target, components.magic(), DamageType.MAGIC);
         return new DamageResult(physical.killed() || magic.killed(),
                 physical.dealtDamage() + magic.dealtDamage(), resolvedDamage);
     }
