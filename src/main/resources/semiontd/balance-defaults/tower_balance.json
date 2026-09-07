@@ -7518,7 +7518,8 @@
       "healthScoreDivisor": 17.0,
       "specialScoreThreshold": 15000.0,
       "deathRadius": 2.5,
-      "deathDamageRatio": 0.1,
+      "deathDamageRatio": 0.05,
+      "upgradedDeathDamageRatio": 0.1,
       "debuffReduction": 0.2,
       "debuffDurationTicks": 160.0
     },

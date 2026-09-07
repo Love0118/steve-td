@@ -1983,7 +1983,7 @@ public record TowerBalanceConfig(
     private void validateGambleAbilities() {
         String poker = GambleTowers.POKER_TABLE.id();
         validatePositive(poker, "healthScoreDivisor", "specialScoreThreshold", "deathRadius");
-        validateRatios(poker, "deathDamageRatio", "debuffReduction");
+        validateRatios(poker, "deathDamageRatio", "upgradedDeathDamageRatio", "debuffReduction");
         validateIntegral(poker, false, "debuffDurationTicks");
         String global = GambleBalance.GLOBAL_ID;
         validatePositive(global, "slotDifferentScore");
@@ -4773,7 +4773,8 @@ public record TowerBalanceConfig(
                 "healthScoreDivisor", 17.0,
                 "specialScoreThreshold", 15000.0,
                 "deathRadius", 2.5,
-                "deathDamageRatio", 0.1,
+                "deathDamageRatio", 0.05,
+                "upgradedDeathDamageRatio", 0.1,
                 "debuffReduction", 0.2,
                 "debuffDurationTicks", 160.0
         ));

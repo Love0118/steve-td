@@ -48,6 +48,128 @@ import xyz.nucleoid.map_templates.BlockBounds;
 
 public final class GambleGameTest {
     @GameTest(maxTicks = 80)
+    public void bothGambleKingsSplitTheirBaseAttackEvenlyBetweenPhysicalAndMagic(GameTestHelper context) {
+        ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
+        UUID owner = stableUuid("gamble-king-mixed-damage");
+        PlayerLane lane = testLane(context, owner);
+        TeamLaneGroup group = new TeamLaneGroup(TeamId.RED, BossMonster.defaultBoss(TeamId.RED));
+        group.addLane(lane);
+        prepareFloor(context);
+        SemionMonsterEntity target = null;
+        try {
+            for (var type : List.of(GambleTowers.KING, GambleTowers.DARK_KING)) {
+                GridPosition position = floor(context, 4, 2, 3);
+                GamblerTower king = new GamblerTower(TowerBalanceRuntime.resolve(type), owner,
+                        TeamId.RED, 1, position, position);
+                lane.addTower(king);
+                king.markWaveStarted(1);
+                double halfDamage = type == GambleTowers.KING ? 20.0 : 22.0;
+                SemionTowerEntity source = entity(lane, king);
+                target = spawnTarget(context, lane, source.position().add(0, 0, 2), "king-mixed-target");
+                require(close(king.type().damage(), halfDamage) && close(king.magicAttackDamage(source), halfDamage),
+                        "Each king's base attack must be split equally, without doubling the original total.");
+                source.damageTargetResult(target, source.attackDamageAmount(target));
+                require(close(king.roundPhysicalDamageDealt(), halfDamage)
+                                && close(king.roundMagicDamageDealt(), halfDamage),
+                        "King basic attacks must deal and record equal physical and magic components.");
+                target.discard();
+                target = null;
+                lane.removeTower(king);
+            }
+            context.succeed();
+        } finally {
+            if (target != null) target.discard();
+            group.closeRuntime();
+        }
+    }
+
+    @GameTest(maxTicks = 80)
+    public void everySlotJackpotSplitsItsScoreBetweenTwoDistinctStats(GameTestHelper context) {
+        ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
+        UUID owner = stableUuid("gamble-slot-jackpot-split");
+        PlayerLane lane = testLane(context, owner);
+        TeamLaneGroup group = new TeamLaneGroup(TeamId.RED, BossMonster.defaultBoss(TeamId.RED));
+        group.addLane(lane);
+        prepareFloor(context);
+        try {
+            for (GambleSlots.Symbol symbol : GambleSlots.Symbol.values()) {
+                GamblerTower gambler = gambler(owner, floor(context, 4, 2, 3));
+                gambler.setData(GamblerTower.STATE,
+                        GambleState.EMPTY.recordAbility(GambleAbility.LOSS_INSURANCE, 0, "insured"));
+                lane.addTower(gambler);
+                long seed = 0;
+                while (true) {
+                    var random = net.minecraft.util.RandomSource.create(seed);
+                    if (random.nextInt(6) == symbol.ordinal() && random.nextInt(6) == symbol.ordinal()
+                            && random.nextInt(6) == symbol.ordinal()) break;
+                    seed++;
+                }
+                entity(lane, gambler).getRandom().setSeed(seed);
+                gambler.onUpgradeApplied(lane, ProductionTowerCatalog.upgrade(
+                        gambler.type(), GambleBet.SLOTS.upgradeId()).orElseThrow());
+                double score = symbol.defaultTripleScore();
+                GambleState state = gambler.state();
+                double[] awardedPoints = {state.maxHealthDelta() / GambleBalance.MAX_HEALTH_PER_SCORE,
+                        state.damageDelta() / GambleBalance.DAMAGE_PER_SCORE,
+                        state.magicDamageDelta() / GambleBalance.DAMAGE_PER_SCORE,
+                        state.rangeDelta() / GambleBalance.RANGE_PER_SCORE};
+                int rewardedStats = 0;
+                for (double points : awardedPoints) {
+                    if (points > 0) {
+                        rewardedStats++;
+                        require(close(points, score / 2), "Each jackpot stat must receive half of the total score.");
+                    }
+                }
+                require(rewardedStats == 2 && close(state.cumulativeScore(), score),
+                        "A jackpot must split across exactly two distinct stats and record the total score once.");
+                lane.removeTower(gambler);
+            }
+            context.succeed();
+        } finally {
+            group.closeRuntime();
+        }
+    }
+
+    @GameTest(maxTicks = 80)
+    public void pokerExplosionUsesFivePercentBeforeBetAndTenPercentAfterAnySurvivingBet(GameTestHelper context) {
+        ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
+        UUID owner = stableUuid("poker-death-upgrade-rate");
+        PlayerLane lane = testLane(context, owner);
+        TeamLaneGroup group = new TeamLaneGroup(TeamId.RED, BossMonster.defaultBoss(TeamId.RED));
+        group.addLane(lane);
+        prepareFloor(context);
+        SemionMonsterEntity target = null;
+        try {
+            PokerTableTower base = poker(owner, floor(context, 4, 2, 3));
+            lane.addTower(base);
+            target = spawnTarget(context, lane, entity(lane, base).position().add(1, 0, 0), "poker-base-target");
+            require(close(base.deathDamageRatio(), 0.05), "An unupgraded table must use five percent.");
+            lane.killTower(base);
+            require(close(target.runtimeMonster().health(), 90), "A base 200-health table must explode for ten damage.");
+            target.discard();
+            target = null;
+            lane.removeTower(base);
+
+            PokerTableTower upgraded = poker(owner, floor(context, 4, 2, 3));
+            lane.addTower(upgraded);
+            upgraded.resolveHand(lane, 200, GamblePoker.evaluate(0, 16, 35));
+            require(upgraded.debuffCount() == 0 && close(upgraded.deathDamageRatio(), 0.1),
+                    "Even a weak surviving hand must upgrade the explosion without requiring a special ability.");
+            upgraded.resetForRound(lane);
+            upgraded.refreshType(TowerBalanceRuntime.resolve(GambleTowers.POKER_TABLE), lane);
+            target = spawnTarget(context, lane, entity(lane, upgraded).position().add(1, 0, 0), "poker-upgraded-target");
+            double expectedDamage = upgraded.currentMaxHealth() * 0.1;
+            lane.killTower(upgraded);
+            require(Math.abs(target.runtimeMonster().health() - (100 - expectedDamage)) < 0.001,
+                    "The upgraded explosion must retain ten percent after round reset and balance reload.");
+            context.succeed();
+        } finally {
+            if (target != null) target.discard();
+            group.closeRuntime();
+        }
+    }
+
+    @GameTest(maxTicks = 80)
     public void pokerLossIsPermanentAndSmallHighHandsOnlyGainHealth(GameTestHelper context) {
         ProductionTowerCatalogs.reloadBuiltIns(TowerBalanceConfig.defaultConfig());
         UUID owner = stableUuid("poker-results");

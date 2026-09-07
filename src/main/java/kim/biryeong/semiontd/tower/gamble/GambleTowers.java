@@ -128,7 +128,7 @@ public final class GambleTowers {
                     "52장 중 3장을 뽑습니다. 8 하이 이하는 파괴, 9~J 하이는 대실패, Q~A 하이·원페어는 일반 강화입니다.",
                     "최대 체력 증가 = 베팅액 × 패 점수 / {ability.healthScoreDivisor:number}.",
                     "패 점수: 9/10/J 하이 2/4/6, Q/K/A 하이 15/20/25, 원페어 30~42, 플러시 50, 스트레이트 55, 트리플·스트레이트 플러시 60.",
-                    "사망 시 반경 {ability.deathRadius:blocks} 내 적에게 최대 체력의 {ability.deathDamageRatio:percent}만큼 마법 피해를 줍니다.",
+                    "사망 시 반경 {ability.deathRadius:blocks} 내 적에게 최대 체력의 {ability.deathDamageRatio:percent}만큼 마법 피해를 줍니다. 베팅 강화 후에는 {ability.upgradedDeathDamageRatio:percent}로 증가합니다.",
                     "베팅액 × 패 점수가 {ability.specialScoreThreshold:integer} 이상인 플러시/스트레이트/트리플 이상은 사망 디버프를 1/2/3개 얻습니다.",
                     "공격력 → 공격 속도 → 방어력 순서로 각각 {ability.debuffReduction:percent} 감소, {ability.debuffDurationTicks:seconds} 지속.",
                     "점수가 부족한 상위 패는 체력만 얻습니다. 베팅 비용은 판매 환불가에 포함되지 않습니다."

@@ -131,6 +131,10 @@ public final class PokerTableTower extends ProductionTower {
                 result.bet(), value("specialScoreThreshold"))).orElse(0);
     }
 
+    public double deathDamageRatio() {
+        return value(hasBet() ? "upgradedDeathDamageRatio" : "deathDamageRatio");
+    }
+
     @Override
     public void onDeath(PlayerLane lane) {
         SemionTowerEntity source = deathSource;
@@ -159,19 +163,22 @@ public final class PokerTableTower extends ProductionTower {
             });
         }
         TowerAreaDamage.apply(this, source, request,
-                target -> currentMaxHealth() * value("deathDamageRatio"), true,
+                target -> currentMaxHealth() * deathDamageRatio(), true,
                 (target, damage, killed) -> {}, DamageType.MAGIC);
     }
 
     @Override
     public List<String> runtimeDetailLines() {
+        String deathDamage = "사망 폭발: 최대 체력의 " + percent(deathDamageRatio())
+                + " (마법 피해 " + oneDecimal(currentMaxHealth() * deathDamageRatio()) + ")";
         return getData(RESULT).map(result -> List.of(
                 "베팅 완료: " + result.bet() + " 다이아 · 재베팅 불가",
                 result.hand().cardsLabel() + " · " + result.hand().displayName(),
                 "패 점수 " + result.hand().score() + " × 베팅 " + result.bet()
                         + " = " + result.hand().weightedScore(result.bet()),
-                "사망 디버프 " + debuffCount() + "개: 공격력 → 공격 속도 → 방어력"
-        )).orElseGet(() -> List.of("아직 베팅하지 않았습니다. 200~1000 다이아로 한 번만 강화할 수 있습니다."));
+                "사망 디버프 " + debuffCount() + "개: 공격력 → 공격 속도 → 방어력",
+                deathDamage
+        )).orElseGet(() -> List.of("아직 베팅하지 않았습니다. 200~1000 다이아로 한 번만 강화할 수 있습니다.", deathDamage));
     }
 
     private double value(String key) {
