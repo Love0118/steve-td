@@ -137,7 +137,8 @@ public final class GamblerTower extends ProductionTower {
 
     double magicAttackDamage(SemionTowerEntity source) {
         double bonus = source == null ? 0.0 : source.activeEffectMagnitude(TimedEffectType.TOWER_DAMAGE_BONUS);
-        return Math.max(0.0, GambleBalance.baseMagicDamage(type()) * (1.0 + bonus) + state().magicDamageDelta());
+        double flat = source == null ? 0.0 : source.activeEffectMagnitude(TimedEffectType.TOWER_FLAT_MAGIC_DAMAGE_BONUS);
+        return Math.max(0.0, GambleBalance.baseMagicDamage(type()) * (1.0 + bonus) + flat + state().magicDamageDelta());
     }
 
     /** Target-independent damage shown in the stat panel, using the combat split and final modifiers. */

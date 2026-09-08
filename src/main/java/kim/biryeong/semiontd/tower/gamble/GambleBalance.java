@@ -128,12 +128,12 @@ public final class GambleBalance {
         return Math.max(0.0, TowerBalanceRuntime.ability(type.id(), "supportPowerMultiplier", 1.0));
     }
 
-    public static long spectatorFaceSixDiamondReward(TowerType type) {
+    public static long spectatorJackpotDiamondReward(TowerType type) {
         if (!GambleTowers.isSpectator(type)) {
             return 0L;
         }
         return Math.max(0L, Math.round(TowerBalanceRuntime.ability(
-                type.id(), "faceSixDiamondReward", 0.0
+                type.id(), "jackpotDiamondReward", 0.0
         )));
     }
 
@@ -156,6 +156,7 @@ public final class GambleBalance {
             case DAMAGE -> positive
                     ? global("supportPositiveDamageUnit", SUPPORT_POSITIVE_DAMAGE_UNIT)
                     : global("supportNegativeDamageUnit", SUPPORT_NEGATIVE_DAMAGE_UNIT);
+            case MAGIC_DAMAGE -> positive ? global("supportPositiveDamageUnit", SUPPORT_POSITIVE_DAMAGE_UNIT) : 0.0;
             case MAX_HEALTH -> positive
                     ? global("supportPositiveMaxHealthUnit", SUPPORT_POSITIVE_MAX_HEALTH_UNIT)
                     : global("supportNegativeMaxHealthUnit", SUPPORT_NEGATIVE_MAX_HEALTH_UNIT);

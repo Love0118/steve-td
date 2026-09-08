@@ -1448,6 +1448,8 @@ public final class SemionDialogService {
                 "<red>❤ 초당 체력 감소 -", "/초</red>");
         appendTimedEffectValue(effects, entity, TimedEffectType.TOWER_FLAT_DAMAGE_BONUS,
                 "<green>⚔ 공격력 증가 +", "</green>");
+        appendTimedEffectValue(effects, entity, TimedEffectType.TOWER_FLAT_MAGIC_DAMAGE_BONUS,
+                "<green>✦ 마법 공격력 증가 +", "</green>");
         appendTimedEffectValue(effects, entity, TimedEffectType.TOWER_FLAT_DAMAGE_REDUCTION,
                 "<red>⚔ 공격력 감소 -", "</red>");
         appendTimedEffectValue(effects, entity, TimedEffectType.TOWER_FLAT_MAX_HEALTH_BONUS,

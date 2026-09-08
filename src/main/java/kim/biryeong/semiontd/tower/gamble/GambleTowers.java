@@ -76,40 +76,19 @@ public final class GambleTowers {
             "gamble_spectator_t1", "슬롯머신 타워 I", 45, 10, 3.5,
             EntityVisual.builder("minecraft:slime").blockbenchModel("semion-td:tower/gamble_slot_machine")
                     .scale(0.75).build(),
-            List.of(
-                    "누적 도박 점수가 가장 높은 도박꾼 하나를 집중 지원합니다.",
-                    "도박꾼 하나에는 슬롯머신이 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기까지 연결됩니다.",
-                    "눈 1~2는 능력치 2개 약화, 3~4는 능력치 2개 강화, 5~6은 네 능력치 모두 강화입니다.",
-                    "눈 6이 나오면 다이아 {ability.faceSixDiamondReward:integer}개를 얻습니다.",
-                    "강화하면 약화 수치는 유지되고, 체력·긍정 효과·연결 범위가 증가합니다.",
-                    "공격하지 않으며 연결선과 이번 라운드 눈금이 타워 머리 위에 표시됩니다."
-            )
+            slotSupportDescription()
     );
     public static final TowerType SPECTATOR_T2 = support(
             "gamble_spectator_t2", "슬롯머신 타워 II", 0, 100, 5,
             EntityVisual.builder("minecraft:slime").blockbenchModel("semion-td:tower/gamble_slot_machine_t2")
                     .scale(0.90).build(),
-            List.of(
-                    "누적 도박 점수가 가장 높은 도박꾼 하나를 집중 지원합니다.",
-                    "도박꾼 하나에는 슬롯머신이 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기까지 연결됩니다.",
-                    "긍정 효과가 같은 눈의 I단계보다 2배로 증가하며, 약화 수치는 증가하지 않습니다.",
-                    "눈 1~2는 능력치 2개 약화, 3~4는 능력치 2개 강화, 5~6은 네 능력치 모두 강화입니다.",
-                    "눈 6이 나오면 다이아 {ability.faceSixDiamondReward:integer}개를 얻습니다.",
-                    "공격하지 않으며 연결선과 이번 라운드 눈금이 타워 머리 위에 표시됩니다."
-            )
+            slotSupportDescription()
     );
     public static final TowerType SPECTATOR_T3 = support(
             "gamble_spectator_t3", "슬롯머신 타워 III", 0, 300, 6.5,
             EntityVisual.builder("minecraft:slime").blockbenchModel("semion-td:tower/gamble_slot_machine_t3")
                     .scale(1.05).build(),
-            List.of(
-                    "누적 도박 점수가 가장 높은 도박꾼 하나를 집중 지원합니다.",
-                    "도박꾼 하나에는 슬롯머신이 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기까지 연결됩니다.",
-                    "긍정 효과가 같은 눈의 I단계보다 3.5배로 증가하며, 약화 수치는 증가하지 않습니다.",
-                    "눈 1~2는 능력치 2개 약화, 3~4는 능력치 2개 강화, 5~6은 네 능력치 모두 강화입니다.",
-                    "눈 6이 나오면 다이아 {ability.faceSixDiamondReward:integer}개를 얻습니다.",
-                    "공격하지 않으며 연결선과 이번 라운드 눈금이 타워 머리 위에 표시됩니다."
-            )
+            slotSupportDescription()
     );
 
     public static final TowerType POKER_TABLE = TowerType.builder("gamble_poker_table", "포커 테이블")
@@ -134,6 +113,16 @@ public final class GambleTowers {
 
     static {
         ALL.forEach(type -> TowerDescriptionRegistry.registerTemplate(type, type.description()));
+    }
+
+    private static List<String> slotSupportDescription() {
+        return List.of(
+                "라운드마다 심볼 3개를 뽑아 점수가 가장 높은 내 도박꾼 하나를 강화합니다. 연결은 도박꾼당 최대 {ability.gamble_global.maxSpectatorsPerGambler:integer}기입니다.",
+                "철 조각: 효과 없음 / 철: 최대 체력 +{ability.slotBaseHealth:number} / 구리: 초당 체력 회복 +{ability.slotBaseRegeneration:number}",
+                "금괴: 일반 공격력 +{ability.slotBaseDamage:number} / 에메랄드: 마법 공격력 +{ability.slotBaseDamage:number} / 다이아: 해당 수치의 절반씩 일반·마법 공격력 증가",
+                "같은 심볼 2개는 해당 효과 2.5배, 3개는 5배입니다. 다른 심볼 효과도 함께 적용됩니다.",
+                "3개 일치 잭팟은 다이아 {ability.jackpotDiamondReward:integer}개를 지급합니다. 철 조각 3개도 다이아는 받습니다.",
+                "효과는 해당 라운드에만 유지됩니다. 뽑힌 심볼은 타워 위에 표시됩니다.");
     }
 
     private GambleTowers() {

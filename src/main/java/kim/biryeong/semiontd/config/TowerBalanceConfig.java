@@ -2041,13 +2041,14 @@ public record TowerBalanceConfig(
         validatePositive(GambleTowers.KING.id(), "splashRadiusBonus");
         validatePositive(GambleTowers.DARK_KING.id(), "splashRadiusBonus");
 
-        for (TowerType type : List.of(
-                GambleTowers.DICE_T1, GambleTowers.DICE_T2, GambleTowers.DICE_T3,
-                GambleTowers.SPECTATOR_T1, GambleTowers.SPECTATOR_T2, GambleTowers.SPECTATOR_T3)) {
+        for (TowerType type : List.of(GambleTowers.DICE_T1, GambleTowers.DICE_T2, GambleTowers.DICE_T3)) {
             validateRange(type.id(), "minimumRoll", 1.0, 6.0);
             validateIntegral(type.id(), false, "minimumRoll");
             validatePositive(type.id(), "supportPowerMultiplier");
-            validateIntegral(type.id(), true, "faceSixDiamondReward");
+        }
+        for (TowerType type : List.of(GambleTowers.SPECTATOR_T1, GambleTowers.SPECTATOR_T2, GambleTowers.SPECTATOR_T3)) {
+            validatePositive(type.id(), "slotBaseHealth", "slotBaseRegeneration", "slotBaseDamage");
+            validateIntegral(type.id(), true, "jackpotDiamondReward");
         }
         if (configuredGambleExpectedScore() <= 0.0) {
             throw new IllegalArgumentException("Gamble two-dice score must have a positive expectation.");
@@ -2472,6 +2473,16 @@ public record TowerBalanceConfig(
         LinkedHashMap<String, Map<String, Double>> mergedAbilities = new LinkedHashMap<>();
         abilities.forEach((towerId, values) -> {
             LinkedHashMap<String, Double> mergedValues = new LinkedHashMap<>(values);
+            if (towerId.startsWith("gamble_spectator_")) {
+                if (!mergedValues.containsKey("jackpotDiamondReward") && mergedValues.containsKey("faceSixDiamondReward")) {
+                    double minimum = mergedValues.getOrDefault("minimumRoll", 1.0);
+                    mergedValues.put("jackpotDiamondReward", Math.rint(mergedValues.get("faceSixDiamondReward") * 36 / (7 - minimum)));
+                }
+                mergedValues.remove("faceSixDiamondReward");
+                mergedValues.remove("minimumRoll");
+                mergedValues.remove("supportPowerMultiplier");
+            }
+
             Map<String, Double> defaultValues = defaults.abilities.get(towerId);
             if (defaultValues != null) {
                 for (Map.Entry<String, Double> entry : defaultValues.entrySet()) {
@@ -4837,25 +4848,29 @@ public record TowerBalanceConfig(
                 "splashRadiusBonus", GambleBalance.DARK_KING_SPLASH_RADIUS_BONUS
         ));
 
-        putGambleSupportAbilities(abilities, GambleTowers.DICE_T1, 1.0, 0);
-        putGambleSupportAbilities(abilities, GambleTowers.DICE_T2, 2.0, 0);
-        putGambleSupportAbilities(abilities, GambleTowers.DICE_T3, 3.5, 0);
-        putGambleSupportAbilities(abilities, GambleTowers.SPECTATOR_T1, 1.0, 5);
-        putGambleSupportAbilities(abilities, GambleTowers.SPECTATOR_T2, 2.0, 15);
-        putGambleSupportAbilities(abilities, GambleTowers.SPECTATOR_T3, 3.5, 35);
+        putGambleSupportAbilities(abilities, GambleTowers.DICE_T1, 1.0);
+        putGambleSupportAbilities(abilities, GambleTowers.DICE_T2, 2.0);
+        putGambleSupportAbilities(abilities, GambleTowers.DICE_T3, 3.5);
+        putSlotSupportAbilities(abilities, GambleTowers.SPECTATOR_T1, 25, 3.5, 2, 30);
+        putSlotSupportAbilities(abilities, GambleTowers.SPECTATOR_T2, 65, 7.5, 4.5, 90);
+        putSlotSupportAbilities(abilities, GambleTowers.SPECTATOR_T3, 125, 13.5, 8.5, 210);
     }
 
     private static void putGambleSupportAbilities(
             LinkedHashMap<String, Map<String, Double>> abilities,
             TowerType type,
-            double supportPowerMultiplier,
-            int faceSixDiamondReward
+            double supportPowerMultiplier
     ) {
         putAbilities(abilities, type.id(), Map.of(
                 "minimumRoll", 1.0,
-                "supportPowerMultiplier", supportPowerMultiplier,
-                "faceSixDiamondReward", (double) faceSixDiamondReward
+                "supportPowerMultiplier", supportPowerMultiplier
         ));
+    }
+
+    private static void putSlotSupportAbilities(LinkedHashMap<String, Map<String, Double>> abilities,
+                                                TowerType type, double health, double regeneration, double damage, double diamonds) {
+        putAbilities(abilities, type.id(), Map.of("slotBaseHealth", health, "slotBaseRegeneration", regeneration,
+                "slotBaseDamage", damage, "jackpotDiamondReward", diamonds));
     }
 
     /** Demon lord upgrades cost 1.5 times the target tier's placement price, rounded up. */

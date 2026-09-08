@@ -281,6 +281,7 @@ public final class GambleGameTest {
             TimedEffectType.TOWER_HEALTH_REGEN_PER_SECOND,
             TimedEffectType.TOWER_HEALTH_LOSS_PER_SECOND,
             TimedEffectType.TOWER_FLAT_DAMAGE_BONUS,
+            TimedEffectType.TOWER_FLAT_MAGIC_DAMAGE_BONUS,
             TimedEffectType.TOWER_FLAT_DAMAGE_REDUCTION,
             TimedEffectType.TOWER_FLAT_MAX_HEALTH_BONUS,
             TimedEffectType.TOWER_FLAT_MAX_HEALTH_REDUCTION
@@ -469,10 +470,9 @@ public final class GambleGameTest {
                     "Dice must support owned combat towers while spectators support only the owned gambler.");
             require(dice.linkedTargets() == 1 && spectator.linkedTargets() == 1,
                     "Every affected tower must have a visible connection from its support tower.");
-            require(sum(dice.lastRollCounts()) == 1 && sum(spectator.lastRollCounts()) == 1,
-                    "Each support tower must roll exactly one face per round, regardless of target count.");
-            require(java.util.Arrays.stream(spectator.lastRollCounts()).sum() == 1,
-                    "Every spectator tier must use the same one-through-six die.");
+            require(sum(dice.lastRollCounts()) == 1 && sum(spectator.lastRollCounts()) == 3,
+                    "Dice roll one face and slots roll three symbols per round, regardless of target count.");
+
 
             var diceSource = GambleRoundEffects.sourceId(dice);
             var spectatorSource = GambleRoundEffects.sourceId(spectator);
@@ -675,13 +675,13 @@ public final class GambleGameTest {
             var secondPlayer = second.players().get(owner);
             secondPlayer.job().orElseThrow().onRoundStarted(new JobContext(second, secondPlayer), 1);
             long secondDiamond = secondPlayer.economy().diamond();
-            require(GambleSpectatorRewards.awardFaceSix(
-                    owner, GambleTowers.SPECTATOR_T1, 6) == 5,
+            require(GambleSpectatorRewards.awardJackpot(
+                    owner, GambleTowers.SPECTATOR_T1, true) == 30,
                     "The second match must register a fresh economy for the same UUID.");
             require(firstEconomy.diamond() == firstDiamond,
                     "The closed first match economy must never receive the second match reward.");
-            require(secondPlayer.economy().diamond() == secondDiamond + 5,
-                    "The second match economy must receive the face-six reward exactly once.");
+            require(secondPlayer.economy().diamond() == secondDiamond + 30,
+                    "The second match economy must receive the jackpot reward exactly once.");
 
             second.close();
             second = null;

@@ -7483,33 +7483,33 @@
     },
     "gamble_dice_t1": {
       "minimumRoll": 1.0,
-      "supportPowerMultiplier": 1.0,
-      "faceSixDiamondReward": 0.0
+      "supportPowerMultiplier": 1.0
     },
     "gamble_dice_t2": {
       "minimumRoll": 1.0,
-      "supportPowerMultiplier": 2.0,
-      "faceSixDiamondReward": 0.0
+      "supportPowerMultiplier": 2.0
     },
     "gamble_dice_t3": {
       "minimumRoll": 1.0,
-      "supportPowerMultiplier": 3.5,
-      "faceSixDiamondReward": 0.0
+      "supportPowerMultiplier": 3.5
     },
     "gamble_spectator_t1": {
-      "minimumRoll": 1.0,
-      "supportPowerMultiplier": 1.0,
-      "faceSixDiamondReward": 5.0
+      "slotBaseHealth": 25.0,
+      "slotBaseRegeneration": 3.5,
+      "slotBaseDamage": 2.0,
+      "jackpotDiamondReward": 30.0
     },
     "gamble_spectator_t2": {
-      "minimumRoll": 1.0,
-      "supportPowerMultiplier": 2.0,
-      "faceSixDiamondReward": 15.0
+      "slotBaseHealth": 65.0,
+      "slotBaseRegeneration": 7.5,
+      "slotBaseDamage": 4.5,
+      "jackpotDiamondReward": 90.0
     },
     "gamble_spectator_t3": {
-      "minimumRoll": 1.0,
-      "supportPowerMultiplier": 3.5,
-      "faceSixDiamondReward": 35.0
+      "slotBaseHealth": 125.0,
+      "slotBaseRegeneration": 13.5,
+      "slotBaseDamage": 8.5,
+      "jackpotDiamondReward": 210.0
     },
     "gamble_gambler": {
       "baseMagicDamage": 5.0
