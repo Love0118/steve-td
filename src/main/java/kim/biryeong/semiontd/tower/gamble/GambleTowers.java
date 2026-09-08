@@ -101,7 +101,7 @@ public final class GambleTowers {
                     "Q 하이 이상은 1000 다이아 기준 체력이 {ability.normalMinHealthBonus:number}~{ability.normalMaxHealthBonus:number} 증가하며, 베팅액에 비례합니다.",
                     "패 점수: 9/10/J 하이 2/4/6, Q/K/A 하이 27/31/35, 원페어 37~49, 플러시 50, 스트레이트 55, 트리플·스트레이트 플러시 60.",
                     "사망 시 반경 {ability.deathRadius:blocks} 내 적에게 최대 체력의 {ability.deathDamageRatio:percent}만큼 마법 피해를 줍니다. 베팅 강화 후에는 {ability.upgradedDeathDamageRatio:percent}로 증가합니다.",
-                    "베팅액 × 패 점수가 {ability.specialScoreThreshold:integer} 이상인 플러시 이상은 강화할 때 사망 디버프 1~3개를 무작위로 얻습니다.",
+                    "베팅액 × 패 점수가 {ability.specialScoreThreshold:integer} 이상이면 플러시 1개, 스트레이트 2개, 트리플·스트레이트 플러시 3개의 사망 디버프를 얻습니다.",
                     "공격력·공격 속도·방어력 중 중복 없이 추첨하며, 뽑힌 효과는 각각 {ability.debuffReduction:percent} 감소, {ability.debuffDurationTicks:seconds} 지속.",
                     "점수가 부족한 상위 패는 체력만 얻습니다. 베팅 비용은 판매 환불가에 포함되지 않습니다."
             )).build();

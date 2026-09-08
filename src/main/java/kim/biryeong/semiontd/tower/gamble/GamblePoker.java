@@ -103,12 +103,17 @@ public final class GamblePoker {
         public TimedEffectType effect() { return effect; }
     }
 
-    /** Uniform count, then a sample without replacement. The caller saves the result once per bet. */
+    /** Hand determines the count; sample effects without replacement and save once per bet. */
     public static List<DeathDebuff> drawDebuffs(Hand hand, long bet, double threshold, IntUnaryOperator nextInt) {
         if (!hand.qualifiesForDebuffs(bet, threshold)) {
             return List.of();
         }
-        int count = 1 + nextInt.applyAsInt(3);
+        int count = switch (hand.kind()) {
+            case FLUSH -> 1;
+            case STRAIGHT -> 2;
+            case THREE_OF_A_KIND, STRAIGHT_FLUSH -> 3;
+            default -> 0;
+        };
         List<DeathDebuff> available = new ArrayList<>(List.of(DeathDebuff.values()));
         List<DeathDebuff> selected = new ArrayList<>();
         for (int i = 0; i < count; i++) {

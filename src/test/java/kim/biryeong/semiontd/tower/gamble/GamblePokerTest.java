@@ -70,16 +70,19 @@ final class GamblePokerTest {
     }
 
     @Test
-    void qualifyingHandsCanReceiveEveryDistinctRandomDebuffSubset() {
+    void qualifyingHandsFixDebuffCountAndRandomizeEffectsWithoutDuplicates() {
         var subsets = new java.util.HashSet<java.util.List<GamblePoker.DeathDebuff>>();
-        for (int count = 0; count < 3; count++) {
+        var hands = java.util.List.of(GamblePoker.evaluate(0, 3, 7), GamblePoker.evaluate(0, 14, 28),
+                GamblePoker.evaluate(0, 13, 26), GamblePoker.evaluate(0, 1, 2));
+        for (int handIndex = 0; handIndex < hands.size(); handIndex++) {
+            int count = Math.min(handIndex + 1, 3);
             for (int first = 0; first < 3; first++) {
                 for (int second = 0; second < 2; second++) {
-                    int[] draws = {count, first, second, 0};
+                    int[] draws = {first, second, 0};
                     int[] index = {0};
-                    var result = GamblePoker.drawDebuffs(GamblePoker.evaluate(0, 3, 7), 1000, 50000,
+                    var result = GamblePoker.drawDebuffs(hands.get(handIndex), 1000, 50000,
                             bound -> draws[index[0]++]);
-                    assertEquals(count + 1, result.size());
+                    assertEquals(count, result.size());
                     assertEquals(result.size(), result.stream().distinct().count());
                     subsets.add(result);
                 }
