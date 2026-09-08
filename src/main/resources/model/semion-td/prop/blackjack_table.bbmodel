@@ -1944,90 +1944,6 @@
       ]
     },
     {
-      "name": "lower_cross_brace",
-      "type": "cube",
-      "uuid": "74fe5c37-393f-5fe9-912e-bf99d4658323",
-      "box_uv": false,
-      "to": [
-        15,
-        8,
-        1
-      ],
-      "origin": [
-        0,
-        0,
-        0
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "autouv": 0,
-      "color": 0,
-      "faces": {
-        "north": {
-          "uv": [
-            4,
-            164,
-            28,
-            188
-          ],
-          "texture": 0
-        },
-        "east": {
-          "uv": [
-            4,
-            164,
-            28,
-            188
-          ],
-          "texture": 0
-        },
-        "south": {
-          "uv": [
-            4,
-            164,
-            28,
-            188
-          ],
-          "texture": 0
-        },
-        "west": {
-          "uv": [
-            4,
-            164,
-            28,
-            188
-          ],
-          "texture": 0
-        },
-        "up": {
-          "uv": [
-            4,
-            164,
-            28,
-            188
-          ],
-          "texture": 0
-        },
-        "down": {
-          "uv": [
-            4,
-            164,
-            28,
-            188
-          ],
-          "texture": 0
-        }
-      },
-      "from": [
-        -15,
-        6,
-        -1
-      ]
-    },
-    {
       "name": "dealer_chip_tray",
       "type": "cube",
       "uuid": "74d066f0-cb4d-5c1f-ae21-8e707ddbffab",
@@ -5141,8 +5057,7 @@
         "2847bed9-726c-5733-8cbb-c0c711c0cb24",
         "4c038cf7-2b38-5b9c-863c-c73c08dd8fdd",
         "4716d26f-2a9a-5d14-aebd-6a96de3e737b",
-        "fe4b1db1-f36a-5659-8a62-8258ab6e6660",
-        "74fe5c37-393f-5fe9-912e-bf99d4658323"
+        "fe4b1db1-f36a-5659-8a62-8258ab6e6660"
       ]
     },
     {

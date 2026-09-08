@@ -346,7 +346,7 @@ public final class GamblerTower extends ProductionTower {
         double healthRatio = health() / Math.max(1.0, currentMaxHealth());
         GambleState after;
         String rewardSummary;
-        if (GambleRewards.awardsAbility(before, score, source.getRandom().nextDouble())) {
+        if (bet != GambleBet.SLOTS && GambleRewards.awardsAbility(before, score, source.getRandom().nextDouble())) {
             GambleAbility ability = GambleRewards.chooseMissing(
                     before, source.getRandom().nextInt(GambleRewards.missingAbilities(before).size())
             );
@@ -398,7 +398,7 @@ public final class GamblerTower extends ProductionTower {
                     + "점 / 3개 +" + oneDecimal(GambleSlots.resolve(symbol, symbol, symbol).score()) + "점");
         }
         lines.add("3개 일치는 서로 다른 능력치 두 개가 보상을 절반씩 나눠 받습니다.");
-        lines.add("능력치 감소는 없으며 비용은 판매 환불가에 포함되지 않습니다.");
+        lines.add("능력치 감소와 손실 보험 획득은 없으며 비용은 판매 환불가에 포함되지 않습니다.");
         return List.copyOf(lines);
     }
 

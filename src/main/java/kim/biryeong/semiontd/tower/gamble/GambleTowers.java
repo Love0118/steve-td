@@ -51,7 +51,7 @@ public final class GambleTowers {
                     "주사위 눈에 따라 최대 체력·일반 공격력·마법 공격력·사거리 중 무작위 능력치가 오르거나 내려갑니다.",
                     "주사위 두 개의 합이 {ability.gamble_global.twoDiceCompoundMinSum:integer} 이상이면 서로 다른 능력치 두 개가 보상을 나눠 받습니다.",
                     "기본 공격은 반경 {ability.gamble_global.baseSplashRadius:blocks} 안의 적에게도 피해를 줍니다.",
-                    "좋은 결과가 나오면 {ability.gamble_global.abilityRewardChance:percent} 확률로 능력치 상승 대신 손실 보험을 얻습니다.",
+                    "주사위 도박에서 좋은 결과가 나오면 {ability.gamble_global.abilityRewardChance:percent} 확률로 능력치 상승 대신 손실 보험을 얻습니다.",
                     "손실 보험은 능력치 감소량을 {ability.gamble_global.lossInsuranceReduction:percent} 줄입니다.",
                     "도박 직후 누적 점수가 +{ability.gamble_global.kingPromotionScore:integer} 이상이면 도박왕, "
                             + "-{ability.gamble_global.darkKingPromotionScoreMagnitude:integer} 이하이면 어둠의 도박왕으로 전직합니다.",
