@@ -236,6 +236,20 @@ final class GambleTowerTest {
         assertFalse(GambleRewards.awardsAbility(GambleState.EMPTY, -5.0, 0.0));
         GambleState all = GambleState.EMPTY.recordAbility(GambleAbility.LOSS_INSURANCE, 40, "all");
         assertFalse(GambleRewards.awardsAbility(all, 40.0, 0.0));
+        assertEquals(0, GambleRewards.statRewardScore(70, GambleAbility.LOSS_INSURANCE));
+        assertEquals(0, GambleRewards.statRewardScore(40, GambleAbility.LOSS_INSURANCE));
+        double remainder = GambleRewards.statRewardScore(GambleRolls.twoDiceDelta(6, 6), GambleAbility.LOSS_INSURANCE);
+        assertEquals(230, remainder);
+        assertEquals(300, GambleRewards.statRewardScore(300, null));
+        GambleState reward = GambleState.EMPTY.recordReward(List.of(
+                new GambleState.StatChange(GambleStat.MAX_HEALTH, GambleBalance.statDelta(GambleStat.MAX_HEALTH, remainder / 2), 110),
+                new GambleState.StatChange(GambleStat.DAMAGE, GambleBalance.statDelta(GambleStat.DAMAGE, remainder / 2), 5)),
+                GambleAbility.LOSS_INSURANCE, 300, "double with insurance");
+        assertEquals(575, reward.maxHealthDelta());
+        assertEquals(57.5, reward.damageDelta());
+        assertTrue(reward.has(GambleAbility.LOSS_INSURANCE));
+        assertEquals(1, reward.totalBets());
+        assertEquals(300, reward.cumulativeScore());
         assertEquals(1, GambleRewards.missingAbilities(GambleState.EMPTY).size());
         assertEquals(0, GambleRewards.missingAbilities(all).size());
         assertEquals(GambleAbility.LOSS_INSURANCE, GambleRewards.chooseMissing(GambleState.EMPTY, 0));
@@ -254,9 +268,6 @@ final class GambleTowerTest {
                 GambleAbility.LOSS_INSURANCE.description());
         assertFalse(GambleAbility.LOSS_INSURANCE.description().contains("홀수·짝수"));
         assertFalse(GambleAbility.LOSS_INSURANCE.description().contains("주사위 두 개"));
-        assertTrue(GambleTowers.GAMBLER.description().stream().anyMatch(line -> line.contains("손실 보험")));
-        assertTrue(GambleTowers.GAMBLER.description().stream().anyMatch(
-                line -> line.contains("능력치 상승 대신 손실 보험")));
         assertFalse(GambleTowers.GAMBLER.description().stream().anyMatch(line -> line.contains("모든 도박")));
         assertFalse(GambleTowers.DICE_T3.description().stream().anyMatch(line -> line.contains("효과 배율")));
         assertTrue(GambleTowers.DICE_T2.description().stream().anyMatch(
@@ -303,8 +314,6 @@ final class GambleTowerTest {
                 ProductionTowerCatalog.find(GambleTowers.GAMBLER.id()).orElseThrow()
                         .create(OWNER, TeamId.RED, 1, new GridPosition(1, 64, 0)));
         assertFalse(gambler.type().description().stream().anyMatch(line -> line.contains("{")));
-        assertTrue(gambler.type().description().stream().anyMatch(
-                line -> line.contains("합이 10 이상") && line.contains("나눠")));
         TowerUpgradeOption twoDice = ProductionTowerCatalog.upgrade(
                 GambleTowers.GAMBLER, GambleBet.TWO_DICE.upgradeId()).orElseThrow();
         assertTrue(gambler.upgradeTooltipLines(twoDice).stream().anyMatch(

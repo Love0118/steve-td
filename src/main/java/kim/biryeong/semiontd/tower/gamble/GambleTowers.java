@@ -44,18 +44,11 @@ public final class GambleTowers {
             .mineralCost(60).maxHealth(110).range(6.5).damage(5).attackIntervalTicks(13)
             .visual(GAMBLER_VISUAL)
             .description(List.of(
-                    "준비 시간에 홀수·짝수, 주사위 두 개, 슬롯 도박을 반복할 수 있습니다. 비용은 업그레이드 버튼에 표시됩니다.",
-                    "슬롯 도박은 능력치 감소 없이 심볼에 따라 강화됩니다.",
-                    "내 라인에 살아 있는 주사위 타워가 있어야 주사위 두 개, 슬롯머신 타워가 있어야 슬롯 도박을 할 수 있습니다.",
-                    "기본 마법 공격력은 {ability.baseMagicDamage:attack_damage}이며 일반 피해와 함께 적용됩니다.",
-                    "주사위 눈에 따라 최대 체력·일반 공격력·마법 공격력·사거리 중 무작위 능력치가 오르거나 내려갑니다.",
-                    "주사위 두 개의 합이 {ability.gamble_global.twoDiceCompoundMinSum:integer} 이상이면 서로 다른 능력치 두 개가 보상을 나눠 받습니다.",
-                    "기본 공격은 반경 {ability.gamble_global.baseSplashRadius:blocks} 안의 적에게도 피해를 줍니다.",
-                    "주사위 도박에서 좋은 결과가 나오면 {ability.gamble_global.abilityRewardChance:percent} 확률로 능력치 상승 대신 손실 보험을 얻습니다.",
-                    "손실 보험은 능력치 감소량을 {ability.gamble_global.lossInsuranceReduction:percent} 줄입니다.",
-                    "도박 직후 누적 점수가 +{ability.gamble_global.kingPromotionScore:integer} 이상이면 도박왕, "
-                            + "-{ability.gamble_global.darkKingPromotionScoreMagnitude:integer} 이하이면 어둠의 도박왕으로 전직합니다.",
-                    "누적 점수가 +{ability.gamble_global.maxGambleScore:integer}에 도달하면 네 가지 도박 업그레이드가 종료됩니다."
+                    "준비 시간에 도박으로 체력·일반/마법 공격력·사거리를 강화합니다.",
+                    "주사위 타워는 주사위 두 개, 슬롯머신은 슬롯 도박을 해금합니다.",
+                    "주사위는 능력치가 감소할 수 있고, 슬롯은 항상 강화됩니다.",
+                    "일반·마법 복합 공격으로 주변 {ability.gamble_global.baseSplashRadius:blocks}에도 피해를 줍니다.",
+                    "누적 +{ability.gamble_global.kingPromotionScore:integer}점이면 도박왕, -{ability.gamble_global.darkKingPromotionScoreMagnitude:integer}점이면 어둠의 도박왕으로 전직합니다. +{ability.gamble_global.maxGambleScore:integer}점에서 도박이 종료됩니다."
             )).build();
     public static final TowerType KING = TowerType.builder("gamble_king", "도박왕")
             .mineralCost(0).maxHealth(400).range(7.5).damage(20).attackIntervalTicks(8)

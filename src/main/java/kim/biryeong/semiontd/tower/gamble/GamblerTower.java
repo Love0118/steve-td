@@ -267,6 +267,8 @@ public final class GamblerTower extends ProductionTower {
                             + " 이상이면 보상을 서로 다른 능력치 두 개가 절반씩 나눠 받습니다.",
                     "가장 자주 나오는 합 7은 " + statRewardSummary(GambleBalance.twoDiceScore(7))
                             + " 중 하나를 줍니다.",
+                    "성공 시 " + oneDecimal(GambleBalance.abilityRewardChance() * 100) + "% 확률로 손실 보험을 얻으며, " + oneDecimal(GambleBalance.oddEvenWinScore())
+                            + "점까지만 보험으로 바뀌고 나머지는 능력치로 지급됩니다.",
                     "같은 눈이 나오면 변화량이 두 배가 되며 비용은 판매 환불가에 포함되지 않습니다."
             );
             case SLOTS -> slotTooltipLines();
@@ -344,34 +346,33 @@ public final class GamblerTower extends ProductionTower {
         }
         GambleState before = state();
         double healthRatio = health() / Math.max(1.0, currentMaxHealth());
-        GambleState after;
-        String rewardSummary;
+        GambleAbility ability = null;
+        ArrayList<String> results = new ArrayList<>();
         if (bet != GambleBet.SLOTS && GambleRewards.awardsAbility(before, score, source.getRandom().nextDouble())) {
-            GambleAbility ability = GambleRewards.chooseMissing(
+            ability = GambleRewards.chooseMissing(
                     before, source.getRandom().nextInt(GambleRewards.missingAbilities(before).size())
             );
-            after = before.recordAbility(
-                    ability, score, bet.displayName() + " " + roll + " → " + ability.detailLine());
-            rewardSummary = ability.displayName() + " 획득";
-        } else {
+            results.add(ability.displayName() + " 획득");
+        }
+        double statScore = GambleRewards.statRewardScore(score, ability);
+        ArrayList<GambleState.StatChange> changes = new ArrayList<>();
+        if (statScore != 0.0) {
             List<GambleStat> stats = rewardCount == 2
                     ? GambleRewards.chooseDistinctStats(
                             source.getRandom().nextInt(GambleRewards.rollableStatCount()),
                             source.getRandom().nextInt(GambleRewards.rollableStatCount() - 1))
                     : List.of(GambleRewards.chooseStat(
                             source.getRandom().nextInt(GambleRewards.rollableStatCount())));
-            ArrayList<GambleState.StatChange> changes = new ArrayList<>(stats.size());
-            ArrayList<String> results = new ArrayList<>(stats.size());
-            double scorePerStat = score / stats.size();
+            double scorePerStat = statScore / stats.size();
             for (GambleStat stat : stats) {
                 double delta = GambleRewards.insuredDelta(before, GambleBalance.statDelta(stat, scorePerStat));
                 changes.add(new GambleState.StatChange(stat, delta, baseValue(stat)));
                 results.add(stat.displayName() + " " + signed(delta));
             }
-            String result = bet.displayName() + " " + roll + " → " + String.join(", ", results);
-            after = before.recordStats(changes, score, result);
-            rewardSummary = String.join(", ", results);
         }
+        String rewardSummary = String.join(", ", results);
+        GambleState after = before.recordReward(changes, ability, score,
+                bet.displayName() + " " + roll + " → " + rewardSummary);
         setData(STATE, after);
         syncMaxHealth(effectBaseMaxHealth(), false);
         syncHealth(currentMaxHealth() * healthRatio);

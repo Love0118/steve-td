@@ -84,6 +84,10 @@ public record GambleState(
     }
 
     public GambleState recordStats(List<StatChange> changes, double score, String result) {
+        return recordReward(changes, null, score, result);
+    }
+
+    public GambleState recordReward(List<StatChange> changes, GambleAbility ability, double score, String result) {
         double health = maxHealthDelta;
         double damage = damageDelta;
         double magicDamage = magicDamageDelta;
@@ -109,19 +113,18 @@ public record GambleState(
                         splashRadius + change.amount(), minimumDelta, maximumDelta);
             }
         }
-        return new GambleState(health, damage, magicDamage, range, splashRadius,
-                cumulativeScore + sanitizeDelta(score), abilities, totalBets + 1, result);
-    }
-
-    public GambleState recordAbility(GambleAbility ability, double score, String result) {
         EnumSet<GambleAbility> updated = abilities.isEmpty()
                 ? EnumSet.noneOf(GambleAbility.class)
                 : EnumSet.copyOf(abilities);
         if (ability != null) {
             updated.add(ability);
         }
-        return new GambleState(maxHealthDelta, damageDelta, magicDamageDelta, rangeDelta, splashRadiusDelta,
+        return new GambleState(health, damage, magicDamage, range, splashRadius,
                 cumulativeScore + sanitizeDelta(score), updated, totalBets + 1, result);
+    }
+
+    public GambleState recordAbility(GambleAbility ability, double score, String result) {
+        return recordReward(List.of(), ability, score, result);
     }
 
     private static double sanitizeDelta(double value) {
