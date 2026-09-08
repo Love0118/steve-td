@@ -137,6 +137,15 @@ public final class GamblePoker {
             return bet * score;
         }
 
+        public double healthBonus(long bet, double weakScoreDivisor, double normalMinBonus, double normalMaxBonus) {
+            long weighted = weightedScore(bet);
+            if (destroyed()) return 0.0;
+            if (weak()) return weighted / weakScoreDivisor;
+            // Q-high (27) through trips/straight flush (60), scaled to the actual wager.
+            double progress = (score - 27.0) / (60.0 - 27.0);
+            return (normalMinBonus + progress * (normalMaxBonus - normalMinBonus)) * bet / MAX_BET;
+        }
+
         public boolean qualifiesForDebuffs(long bet, double threshold) {
             return kind.special && weightedScore(bet) >= threshold;
         }

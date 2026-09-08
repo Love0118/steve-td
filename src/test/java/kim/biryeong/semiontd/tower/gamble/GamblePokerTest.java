@@ -13,6 +13,7 @@ final class GamblePokerTest {
         int destroyed = 0;
         int weak = 0;
         int totalScore = 0;
+        double totalHealth = 0;
         for (int a = 0; a < 52; a++) {
             for (int b = a + 1; b < 52; b++) {
                 for (int c = b + 1; c < 52; c++) {
@@ -21,6 +22,7 @@ final class GamblePokerTest {
                     destroyed += hand.destroyed() ? 1 : 0;
                     weak += hand.weak() ? 1 : 0;
                     totalScore += hand.score();
+                    totalHealth += hand.destroyed() ? 0 : 180 + hand.healthBonus(1000, 170.0 / 3, 620, 1170);
                     assertEquals(hand.score(), GamblePoker.evaluate(c, a, b).score());
                 }
             }
@@ -31,6 +33,7 @@ final class GamblePokerTest {
         assertEquals(1800, destroyed);
         assertEquals(4920, weak);
         assertEquals(588992, totalScore);
+        assertEquals(728.786975, totalHealth / 22100, 0.000001);
 
         assertEquals(GamblePoker.Kind.STRAIGHT, GamblePoker.evaluate(12, 13, 27).kind()); // A,2,3
         assertEquals(GamblePoker.Kind.STRAIGHT, GamblePoker.evaluate(10, 24, 38).kind()); // Q,K,A
@@ -56,6 +59,9 @@ final class GamblePokerTest {
         assertTrue(triple.qualifiesForDebuffs(834, 50000));
         assertFalse(GamblePoker.evaluate(12, 25, 28).qualifiesForDebuffs(1000, 50000));
         assertEquals(60000, triple.weightedScore(1000));
+        assertEquals(620, GamblePoker.evaluate(10, 13, 28).healthBonus(1000, 170.0 / 3, 620, 1170));
+        assertEquals(1170, triple.healthBonus(1000, 170.0 / 3, 620, 1170));
+        assertEquals(234, triple.healthBonus(200, 170.0 / 3, 620, 1170));
         assertTrue(GamblePoker.validBet(200));
         assertTrue(GamblePoker.validBet(1000));
         assertFalse(GamblePoker.validBet(199));

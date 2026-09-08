@@ -7516,6 +7516,8 @@
     },
     "gamble_poker_table": {
       "healthScoreDivisor": 56.666666666666664,
+      "normalMinHealthBonus": 620.0,
+      "normalMaxHealthBonus": 1170.0,
       "specialScoreThreshold": 50000.0,
       "deathRadius": 2.5,
       "deathDamageRatio": 0.05,

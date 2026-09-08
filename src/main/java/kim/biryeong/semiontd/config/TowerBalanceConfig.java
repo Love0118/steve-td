@@ -1983,6 +1983,10 @@ public record TowerBalanceConfig(
     private void validateGambleAbilities() {
         String poker = GambleTowers.POKER_TABLE.id();
         validatePositive(poker, "healthScoreDivisor", "specialScoreThreshold", "deathRadius");
+        validatePositive(poker, "normalMinHealthBonus", "normalMaxHealthBonus");
+        if (ability(poker, "normalMaxHealthBonus", 1170) < ability(poker, "normalMinHealthBonus", 620)) {
+            throw new IllegalArgumentException("Poker maximum health bonus must not be below its minimum.");
+        }
         validateRatios(poker, "deathDamageRatio", "upgradedDeathDamageRatio", "debuffReduction");
         validateIntegral(poker, false, "debuffDurationTicks");
         String global = GambleBalance.GLOBAL_ID;
@@ -4771,6 +4775,8 @@ public record TowerBalanceConfig(
     private static void putGambleAbilities(LinkedHashMap<String, Map<String, Double>> abilities) {
         putAbilities(abilities, GambleTowers.POKER_TABLE.id(), Map.of(
                 "healthScoreDivisor", 170.0 / 3.0,
+                "normalMinHealthBonus", 620.0,
+                "normalMaxHealthBonus", 1170.0,
                 "specialScoreThreshold", 50000.0,
                 "deathRadius", 2.5,
                 "deathDamageRatio", 0.05,

@@ -83,7 +83,8 @@ public final class PokerTableTower extends ProductionTower {
     @Override
     public double effectBaseMaxHealth() {
         return super.effectBaseMaxHealth() + getData(RESULT)
-                .map(result -> result.hand().weightedScore(result.bet()) / value("healthScoreDivisor"))
+                .map(result -> result.hand().healthBonus(result.bet(), value("healthScoreDivisor"),
+                        value("normalMinHealthBonus"), value("normalMaxHealthBonus")))
                 .orElse(0.0);
     }
 

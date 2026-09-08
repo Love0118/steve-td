@@ -108,7 +108,7 @@ public final class GambleGameTest {
             PokerTableTower flush = poker(owner, floor(context, 5, 2, 3));
             lane.addTower(flush);
             flush.resolveHand(lane, 200, GamblePoker.evaluate(0, 3, 7));
-            require(close(flush.currentMaxHealth(), 180 + 10000.0 * 3 / 170) && flush.debuffCount() == 0,
+            require(close(flush.currentMaxHealth(), 380.666666667) && flush.debuffCount() == 0,
                     "A small flush bet must grant health without a special ability.");
             context.succeed();
         } finally {
@@ -230,7 +230,7 @@ public final class GambleGameTest {
         PokerTableTower table = poker(owner, floor(context, 5, 2, 5));
         lane.addTower(table);
         table.resolveHand(lane, 1000, GamblePoker.evaluate(0, 13, 26), bound -> bound - 1);
-        require(close(table.currentMaxHealth(), 180 + 60000.0 * 3 / 170), "Health must use the accepted score conversion.");
+        require(close(table.currentMaxHealth(), 1350), "Health must use the accepted score conversion.");
         double maxHealth = table.currentMaxHealth();
         table.resetForRound(lane);
         table.refreshType(TowerBalanceRuntime.resolve(GambleTowers.POKER_TABLE), lane);

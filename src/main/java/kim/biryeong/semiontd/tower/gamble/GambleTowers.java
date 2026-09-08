@@ -119,7 +119,7 @@ public final class GambleTowers {
             .description(List.of(
                     "공격하지 않는 앞라인 타워입니다. 200~1000 다이아를 베팅해 한 번만 강화할 수 있습니다.",
                     "52장 중 3장을 뽑습니다. 8 하이 이하는 파괴, 9~J 하이는 대실패, Q~A 하이·원페어는 일반 강화입니다.",
-                    "최대 체력 증가 = 베팅액 × 패 점수 / {ability.healthScoreDivisor:number}.",
+                    "Q 하이 이상은 1000 다이아 기준 체력이 {ability.normalMinHealthBonus:number}~{ability.normalMaxHealthBonus:number} 증가하며, 베팅액에 비례합니다.",
                     "패 점수: 9/10/J 하이 2/4/6, Q/K/A 하이 27/31/35, 원페어 37~49, 플러시 50, 스트레이트 55, 트리플·스트레이트 플러시 60.",
                     "사망 시 반경 {ability.deathRadius:blocks} 내 적에게 최대 체력의 {ability.deathDamageRatio:percent}만큼 마법 피해를 줍니다. 베팅 강화 후에는 {ability.upgradedDeathDamageRatio:percent}로 증가합니다.",
                     "베팅액 × 패 점수가 {ability.specialScoreThreshold:integer} 이상인 플러시 이상은 강화할 때 사망 디버프 1~3개를 무작위로 얻습니다.",
